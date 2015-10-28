@@ -36,6 +36,7 @@ $(< anaconda-ks.cfg)
 %post
 ls -l /root/  >/tmp.listing
 mkdir /root/.ssh
+chmod 700 /root/.ssh
 cat >/root/.ssh/authorized_keys <<EOS
 $(< tmp-sshkeypair.pub)
 EOS
