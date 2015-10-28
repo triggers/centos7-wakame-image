@@ -49,8 +49,8 @@ EOF
     $skip_rest_if_already_done
     set -e
     cd "$SCRIPT_DIR/01-minimal-image/"
-    time ./centos-kickstart-build.sh "$CENTOSISO" ks-sshpair.cfg tmp.img 1024M
-    cp -al tmp.img minimal-image.qcow2
+    time ./centos-kickstart-build.sh "$CENTOSISO" ks-sshpair.cfg tmp.qcow2 1024M
+    cp -al tmp.qcow2 minimal-image.qcow2
 ) || reportfailed "Error while installing minimal image with kickstart"
 
 (
@@ -68,7 +68,7 @@ EOF
     cd "$SCRIPT_DIR/02-image-plus-wakame-init/"
     cp "$SCRIPT_DIR/01-minimal-image/runscript.sh" .
     tar -xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz"
-    sed -i 's/tmp.img/minimal-image.qcow2/' runscript.sh
+    sed -i 's/tmp.qcow2/minimal-image.qcow2/' runscript.sh
 ) || reportfailed "Error while extracting fresh minimal image"
 
 (
