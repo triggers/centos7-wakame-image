@@ -32,3 +32,11 @@ CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
     time ./centos-kickstart-build.sh "$CENTOSISO" anaconda-ks.cfg tmp.img 1024M
     mv tmp.img minimal-image.qcow2
 ) || reportfailed "Error while installing minimal image with kickstart"
+
+(
+    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz" ]
+    $skip_rest_if_already_done
+    set -e
+    cd "$SCRIPT_DIR/01-minimal-image/"
+    time tar czSvf minimal-image.qcow2.tar.gz minimal-image.qcow2
+) || reportfailed "Error while tarring minimal image"
