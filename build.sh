@@ -49,7 +49,7 @@ EOF
     set -e
     cd "$SCRIPT_DIR/01-minimal-image/"
     time ./centos-kickstart-build.sh "$CENTOSISO" ks-sshpair.cfg tmp.img 1024M
-    mv tmp.img minimal-image.qcow2
+    cp -al tmp.img minimal-image.qcow2
 ) || reportfailed "Error while installing minimal image with kickstart"
 
 (
