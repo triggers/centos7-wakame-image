@@ -60,3 +60,26 @@ EOF
     cd "$SCRIPT_DIR/01-minimal-image/"
     time tar czSvf minimal-image.qcow2.tar.gz minimal-image.qcow2
 ) || reportfailed "Error while tarring minimal image"
+
+(
+    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.qcow2" ]
+    $skip_rest_if_already_done
+    set -e
+    cd "$SCRIPT_DIR/02-image-plus-wakame-init/"
+    cp "$SCRIPT_DIR/01-minimal-image/runscript.sh" .
+    tar -xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz"
+    sed -i 's/tmp.img/minimal-image.qcow2/' runscript.sh
+) || reportfailed "Error while extracting fresh minimal image"
+
+(
+    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed" ] ||
+	[ -f "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid" ] &&
+	    kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid")
+    $skip_rest_if_already_done
+    set -e
+    cd "$SCRIPT_DIR/02-image-plus-wakame-init/"
+    ./runscript.sh >kvm.stderr 2>kvm.stderr &
+    echo $! >kvm.pid
+    sleep 10
+    kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid")
+) || reportfailed "Error while booting fresh minimal image"
