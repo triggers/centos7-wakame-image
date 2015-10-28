@@ -1,0 +1,34 @@
+#!/bin/bash
+
+reportfailed()
+{
+    echo "Script failed...exiting. ($*)" 1>&2
+    exit 255
+}
+
+export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfail
+
+
+: ${skip_rest_if_already_done:=eval ((\$?))||exit 0} # exit (sub)process if return code is 0
+
+CENTOSISO="CentOS-7-x86_64-Minimal-1503-01.iso"
+ISOMD5="d07ab3e615c66a8b2e9a50f4852e6a77"
+CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
+
+(
+    [ -f "$SCRIPT_DIR/01-minimal-image/$CENTOSISO" ] &&
+	[[ "$(< "$SCRIPT_DIR/01-minimal-image/$CENTOSISO.md5")" = *$ISOMD5* ]]
+    $skip_rest_if_already_done
+    set -e
+    curl --fail "$CENTOSMIRROR/$CENTOSISO" -o "$SCRIPT_DIR/01-minimal-image/$CENTOSISO"
+    md5sum "$SCRIPT_DIR/01-minimal-image/$CENTOSISO" >"$SCRIPT_DIR/01-minimal-image/$CENTOSISO.md5"
+) || reportfailed "Error while downloading ISO image"
+
+(
+    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2" ]
+    $skip_rest_if_already_done
+    set -e
+    cd "$SCRIPT_DIR/01-minimal-image/"
+    time ./centos-kickstart-build.sh "$CENTOSISO" anaconda-ks.cfg tmp.img 1024M
+    mv tmp.img minimal-image.qcow2
+) || reportfailed "Error while installing minimal image with kickstart"
