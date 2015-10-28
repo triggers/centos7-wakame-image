@@ -25,11 +25,30 @@ CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
 ) || reportfailed "Error while downloading ISO image"
 
 (
+    [ -f "$SCRIPT_DIR/01-minimal-image/ks-sshpair.cfg" ]
+    $skip_rest_if_already_done
+    set -e
+    cd "$SCRIPT_DIR/01-minimal-image/"
+    [ -f tmp-sshkeypair ] || ssh-keygen -f tmp-sshkeypair -N ""
+    cat >ks-sshpair.cfg <<EOF
+$(< anaconda-ks.cfg)
+
+%post
+ls -l /root/  >/tmp.listing
+mkdir /root/.ssh
+cat >/root/.ssh/authorized_keys <<EOS
+$(< tmp-sshkeypair.pub)
+EOS
+%end
+EOF
+) || reportfailed "Error while creating custom ks file with ssh key"
+
+(
     [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2" ]
     $skip_rest_if_already_done
     set -e
     cd "$SCRIPT_DIR/01-minimal-image/"
-    time ./centos-kickstart-build.sh "$CENTOSISO" anaconda-ks.cfg tmp.img 1024M
+    time ./centos-kickstart-build.sh "$CENTOSISO" ks-sshpair.cfg tmp.img 1024M
     mv tmp.img minimal-image.qcow2
 ) || reportfailed "Error while installing minimal image with kickstart"
 
