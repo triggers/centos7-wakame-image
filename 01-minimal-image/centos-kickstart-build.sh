@@ -73,7 +73,12 @@ kvmcmdline=(
     -vnc 0.0.0.0:47
     )
 
-echo "${kvmcmdline[@]}" >runscript.sh
+cat >runscript.sh <<EOF
+${kvmcmdline[@]} &
+echo "\$!" >kvm.pid
+wait
+EOF
+
 chmod +x runscript.sh
 
 "${kvmcmdline[@]}" -boot once=d -cdrom "$install_iso" >kvm.stdout 2>kvm.stderr &
