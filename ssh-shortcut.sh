@@ -4,5 +4,5 @@
 
 export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfail
 
-ssh root@127.0.0.1 -p 2224 -i "$SCRIPT_DIR/01-minimal-image/tmp-sshkeypair"
+ssh root@127.0.0.1 -p 2224 -i "$SCRIPT_DIR/01-minimal-image/tmp-sshkeypair" "$@"
 

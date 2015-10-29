@@ -81,4 +81,11 @@ EOF
     ./runscript.sh >kvm.stdout 2>kvm.stderr &
     sleep 10
     kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid")
+    for (( i=1 ; i<20 ; i++ )); do
+	tryssh="$("$SCRIPT_DIR/ssh-shortcut.sh" echo it-worked)" || :
+	[ "$tryssh" = "it-worked" ] && break
+	echo "$i/20 - Waiting 10 more seconds for ssh to connect..."
+	sleep 10
+    done
+    [[ "$tryssh" = "it-worked" ]]
 ) || reportfailed "Error while booting fresh minimal image"
