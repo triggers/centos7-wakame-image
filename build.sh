@@ -89,3 +89,13 @@ EOF
     done
     [[ "$tryssh" = "it-worked" ]]
 ) || reportfailed "Error while booting fresh minimal image"
+
+(
+    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed" ]
+    $skip_rest_if_already_done
+    set -e
+    repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
+    "$SCRIPT_DIR/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
+    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y wakame-init
+    touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed"
+) || reportfailed "Error while booting fresh minimal image"
