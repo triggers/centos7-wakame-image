@@ -42,7 +42,7 @@ KSFPY="$TARGET_DIR/kickstart_floppy.img"
 (
     set -e
     rm -f "$target_image"
-    qemu-img create -f qcow2 "$target_image" 10000M
+    qemu-img create -f raw "$target_image" 10000M
 ) || reportfail "Problem while creating empty qcow2 image"
 
 binlist=(
