@@ -100,7 +100,7 @@ EOF
     "$SCRIPT_DIR/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y wakame-init
     touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed"
-) || reportfailed "Error while booting fresh minimal image"
+) || reportfailed "Error while installing wakame-init"
 
 (
     [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown" ]
@@ -114,7 +114,7 @@ EOF
     done
     kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid") 2>/dev/null && exit
     touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown"
-) || reportfailed "Error while booting fresh minimal image"
+) || reportfailed "Error while shutting down VM"
 
 (
     [ -f "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-6.6.x86_64.kvm.md.raw.tar.gz" ]
@@ -126,4 +126,4 @@ EOF
     tar czvf centos-6.6.x86_64.kvm.md.raw.tar.gz centos-6.6.x86_64.kvm.md.raw
     md5sum centos-6.6.x86_64.kvm.md.raw.tar.gz >centos-6.6.x86_64.kvm.md.raw.tar.gz.md5
     md5sum centos-6.6.x86_64.kvm.md.raw        >centos-6.6.x86_64.kvm.md.raw.md5
-) || reportfailed "Error while booting fresh minimal image"
+) || reportfailed "Error while booting tarring image"
