@@ -73,8 +73,10 @@ EOF
 
 (
     [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed" ] ||
-	[ -f "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid" ] &&
-	    kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid") 2>/dev/null
+	{
+	    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid" ] &&
+		kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid") 2>/dev/null
+	}
     $skip_rest_if_already_done
     set -e
     cd "$SCRIPT_DIR/02-image-plus-wakame-init/"
