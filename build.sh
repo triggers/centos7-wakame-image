@@ -101,3 +101,17 @@ EOF
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y wakame-init
     touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed"
 ) || reportfailed "Error while booting fresh minimal image"
+
+(
+    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown" ]
+    $skip_rest_if_already_done
+    set -e
+    "$SCRIPT_DIR/ssh-shortcut.sh" shutdown -P now
+    for (( i=1 ; i<20 ; i++ )); do
+	kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid") 2>/dev/null || break
+	echo "$i/20 - Waiting 2 more seconds for KVM to exit..."
+	sleep 2
+    done
+    kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid") 2>/dev/null && exit
+    touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown"
+) || reportfailed "Error while booting fresh minimal image"
