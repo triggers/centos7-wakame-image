@@ -117,21 +117,21 @@ EOF
 ) || reportfailed "Error while shutting down VM"
 
 (
-    [ -f "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-6.6.x86_64.kvm.md.raw.tar.gz" ]
+    [ -f "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz" ]
     $skip_rest_if_already_done
     set -e
     cp -al "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.qcow2" \
-       "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-6.6.x86_64.kvm.md.raw"
+       "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw"
     cd "$SCRIPT_DIR/99-package-for-wakame-vdc/"
-    tar czvf centos-6.6.x86_64.kvm.md.raw.tar.gz centos-6.6.x86_64.kvm.md.raw
-    md5sum centos-6.6.x86_64.kvm.md.raw.tar.gz >centos-6.6.x86_64.kvm.md.raw.tar.gz.md5
-    md5sum centos-6.6.x86_64.kvm.md.raw        >centos-6.6.x86_64.kvm.md.raw.md5
+    tar czvf centos-7.x86_64.kvm.md.raw.tar.gz centos-7.x86_64.kvm.md.raw
+    md5sum centos-7.x86_64.kvm.md.raw.tar.gz >centos-7.x86_64.kvm.md.raw.tar.gz.md5
+    md5sum centos-7.x86_64.kvm.md.raw        >centos-7.x86_64.kvm.md.raw.md5
 ) || reportfailed "Error while booting tarring image"
 
 (
-    [ -f "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-6.6.x86_64.kvm.md.raw.tar.gz.install.sh" ]
+    [ -f "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz.install.sh" ]
     $skip_rest_if_already_done
     set -e
     cd "$SCRIPT_DIR/99-package-for-wakame-vdc/"
-    ./output-image-install-script.sh centos-6.6.x86_64.kvm.md.raw.tar.gz
+    ./output-image-install-script.sh centos-7.x86_64.kvm.md.raw.tar.gz
 ) || reportfailed "Error while creating install script for image"
