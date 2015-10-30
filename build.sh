@@ -115,3 +115,15 @@ EOF
     kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid") 2>/dev/null && exit
     touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown"
 ) || reportfailed "Error while booting fresh minimal image"
+
+(
+    [ -f "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-6.6.x86_64.kvm.md.raw.tar.gz" ]
+    $skip_rest_if_already_done
+    set -e
+    cp -al "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.qcow2" \
+       "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-6.6.x86_64.kvm.md.raw"
+    cd "$SCRIPT_DIR/99-package-for-wakame-vdc/"
+    tar czvf centos-6.6.x86_64.kvm.md.raw.tar.gz centos-6.6.x86_64.kvm.md.raw
+    md5sum centos-6.6.x86_64.kvm.md.raw.tar.gz >centos-6.6.x86_64.kvm.md.raw.tar.gz.md5
+    md5sum centos-6.6.x86_64.kvm.md.raw        >centos-6.6.x86_64.kvm.md.raw.md5
+) || reportfailed "Error while booting fresh minimal image"
