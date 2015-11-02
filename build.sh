@@ -235,23 +235,32 @@ EOF
 
 $tmptmp # temporary hack while writing/debugging
 
-## final packaging
-(
-    [ -f "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz" ]
-    $skip_rest_if_already_done
-    set -e
-    cp -al "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.qcow2" \
-       "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw"
-    cd "$SCRIPT_DIR/99-package-for-wakame-vdc/"
-    tar czvf centos-7.x86_64.kvm.md.raw.tar.gz centos-7.x86_64.kvm.md.raw
-    md5sum centos-7.x86_64.kvm.md.raw.tar.gz >centos-7.x86_64.kvm.md.raw.tar.gz.md5
-    md5sum centos-7.x86_64.kvm.md.raw        >centos-7.x86_64.kvm.md.raw.md5
-) ; prev-cmd-failed "Error while booting tarring image"
+package-steps()
+{
+    source="$1"
+    target="$2"
+    targetDIR="${2%/*}"
+    targetNAME="${2##*/}"
+    (
+	[ -f "$target" ]
+	$skip_rest_if_already_done
+	set -e
+	cp -al "$source" "${target%.tar.gz}"
+	cd "$targetDIR"
+	tar czvf "$target" "${targetNAME%.tar.gz}"
+	md5sum "${targetNAME}" >"${targetNAME}".md5
+	md5sum "${targetNAME%.tar.gz}" >"${targetNAME%.tar.gz}".md5
+    ) ; prev-cmd-failed "Error while booting tarring image: $targetNAME"
+    
+    (
+	[ -f "$target".install.sh ]
+	$skip_rest_if_already_done
+	set -e
+	cd "$targetDIR"
+	./output-image-install-script.sh "$targetNAME"
+    ) ; prev-cmd-failed "Error while creating install script for image: $targetNAME"
+}
 
-(
-    [ -f "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz.install.sh" ]
-    $skip_rest_if_already_done
-    set -e
-    cd "$SCRIPT_DIR/99-package-for-wakame-vdc/"
-    ./output-image-install-script.sh centos-7.x86_64.kvm.md.raw.tar.gz
-) ; prev-cmd-failed "Error while creating install script for image"
+package-steps \
+    "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.qcow2" \
+    "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz"
