@@ -1,0 +1,54 @@
+musselpath=/opt/axsh/wakame-vdc/client/mussel/mussel.sh
+
+export DCMGR_HOST=127.0.0.1
+export account_id=a-shpoolxx
+
+
+# example:
+# ./mussel.sh  instance create --cpu_cores=2 --memory_size=512 --image_id=wmi-webimage --hypervisor=kvm --ssh_key_id=ssh-e4jtbl5c --display_name=myname --vifs="afile"
+
+# example sg rules:
+# tcp:22,22,ip4:0.0.0.0
+# tcp:80,80,ip4:0.0.0.0
+
+bootsetup()
+{
+    idline="$($musselpath security_group index | grep ':id:' | head -n 1)"
+    read dash label sguuid <<<"$idline"
+    [[ "$sguuid" == sg-* ]] || {
+	echo "Could not get security group from mussel ($idline)." 1>&2
+	return 255
+    }
+    echo '{"eth0":{"index":"0","network":"nw-demo1","security_groups":"'"${sguuid}"'"}}' >./vifs.info
+    
+    idline="$($musselpath ssh_key_pair index | grep ':id:' | head -n 1)"
+    read dash label sshuuid <<<"$idline"
+    [[ "$sshuuid" == ssh-* ]] || {
+	echo "Could not get ssh key id from mussel ($idline)." 1>&2
+	return 255
+    }
+    echo "$sshuuid" >./sshkeyid
+}
+
+bootone()
+{
+    bootsetup || return 255 # run this every time
+    name="$1"
+    basic="--cpu_cores=2 --memory_size=1024  --hypervisor=kvm"
+    specific="--image_id=wmi-${name}image --display_name=${name}"
+    $musselpath  instance create  $basic $specific --ssh_key_id=$(cat ./sshkeyid) --vifs="vifs.info"
+}
+
+terminateone()
+{
+    instance_id="$1"
+    $musselpath  instance destroy "$instance_id"
+}
+
+get-instance-ip()
+{
+    $musselpath  instance show "$1" | \
+	while read label value; do
+	    [[ "$label" == *:address:* ]] && echo "$value"
+	done
+}
