@@ -170,7 +170,8 @@ EOF
     set -e
     # from http://docs.fluentd.org/articles/install-by-rpm
     "$SCRIPT_DIR/ssh-shortcut.sh" <<EOF
-    curl -L https://toolbelt.treasuredata.com/sh/install-redhat-td-agent2.sh | sh
+    # we are already root and sudo complains about no tty , so strip sudo from the script
+    curl -L https://toolbelt.treasuredata.com/sh/install-redhat-td-agent2.sh | sed 's/sudo//' | sh
 EOF
     touch "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed"
 ) || reportfailed "Error while installing wakame-init"
