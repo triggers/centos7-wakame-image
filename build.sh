@@ -275,10 +275,14 @@ package-steps()
 	$skip_rest_if_already_done
 	set -e
 	cd "$targetDIR"
-	./output-image-install-script.sh "$targetNAME"
+	../output-image-install-script.sh "$targetNAME"
     ) ; prev-cmd-failed "Error while creating install script for image: $targetNAME"
 }
 
 package-steps \
     "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.qcow2" \
     "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz"
+
+package-steps \
+    "$SCRIPT_DIR/03-kccs-additions/minimal-image.qcow2" \
+    "$SCRIPT_DIR/99k-package-for-kccs/centos-7.x86_64.kvm.md.raw.tar.gz"
