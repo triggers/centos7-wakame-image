@@ -11,6 +11,15 @@ reportfailed()
     exit 255
 }
 
+prev-cmd-failed()
+{
+    # this is needed because '( cmd1 ; cmd2 ; set -e ; cmd3 ; cmd4 ) || reportfailed'
+    # does not work because the || disables set -e, even inside the subshell!
+    # see http://unix.stackexchange.com/questions/65532/why-does-set-e-not-work-inside
+    # A workaround is to do  '( cmd1 ; cmd2 ; set -e ; cmd3 ; cmd4 ) ; prev-cmd-failed'
+    (($? == 0)) || reportfailed "$*"
+}
+
 # Minimal parameter checking to catch typos:
 [ -f "$install_iso" ] || reportfailed "Iso ($install_iso) not found."
 [[ "$install_iso" == *.iso ]] || \
@@ -36,14 +45,14 @@ KSFPY="$TARGET_DIR/kickstart_floppy.img"
     /sbin/mkfs.msdos "$KSFPY"
     mcopy -i "$KSFPY" "$kickstart_file" ::/ks.cfg
     mdir -i "$KSFPY"
-) || reportfail "Problem while creating floppy with kickstart file"
+) ; prev-cmd-failed "Problem while creating floppy with kickstart file"
 
 
 (
     set -e
     rm -f "$target_image"
     qemu-img create -f raw "$target_image" 10000M
-) || reportfail "Problem while creating empty qcow2 image"
+) ; prev-cmd-failed "Problem while creating empty qcow2 image"
 
 binlist=(
     /usr/libexec/qemu-kvm
