@@ -231,7 +231,25 @@ EOF
     "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi zabbix-agent
     "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi zabbix-jp-release
     touch "$SCRIPT_DIR/03-kccs-additions/flag-zabbix-installed"
+    touch "$SCRIPT_DIR/03-kccs-additions/flag-finished-additions"
 ) ; prev-cmd-failed "Error while installing zabbix"
+
+( # TODO: refactor this
+    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-shutdown" ]
+    $skip_rest_if_already_done
+    set -e
+    kill -0 $(< "$SCRIPT_DIR/03-kccs-additions/kvm.pid") 2>/dev/null || \
+	reportfailed "Expecting KVM process to be running now"
+    # the next ssh always returns error, so mask it from set -e
+    "$SCRIPT_DIR/ssh-shortcut.sh" shutdown -P now || true
+    for (( i=1 ; i<20 ; i++ )); do
+	kill -0 $(< "$SCRIPT_DIR/03-kccs-additions/kvm.pid") 2>/dev/null || break
+	echo "$i/20 - Waiting 2 more seconds for KVM to exit..."
+	sleep 2
+    done
+    kill -0 $(< "$SCRIPT_DIR/03-kccs-additions/kvm.pid") 2>/dev/null && exit 1
+    touch "$SCRIPT_DIR/03-kccs-additions/flag-shutdown"
+) ; prev-cmd-failed "Error while shutting down VM"
 
 $tmptmp # temporary hack while writing/debugging
 
