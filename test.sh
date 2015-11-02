@@ -38,16 +38,16 @@ fname="${image_full_path##*/}"
 
 # TODO: be smarter about if the existing image is the same as $image_full_path
 if [ -f "/var/lib/wakame-vdc/images/$fname" ]; then
-    mv "/var/lib/wakame-vdc/images/$fname" \
-       "/var/lib/wakame-vdc/images/$fname-$(date +%y%m%d-%H%M%S)"
+    sudo mv "/var/lib/wakame-vdc/images/$fname" \
+	 "/var/lib/wakame-vdc/images/$fname-$(date +%y%m%d-%H%M%S)"
 fi
 
 (
     [ -f "/var/lib/wakame-vdc/images/$fname" ]
     $skip_rest_if_already_done
     set -e
-    cp -al "$image_full_path" "/var/lib/wakame-vdc/images/$fname" 2>/dev/null ||
-	cp "$image_full_path" "/var/lib/wakame-vdc/images/$fname"
+    sudo cp -al "$image_full_path" "/var/lib/wakame-vdc/images/$fname" 2>/dev/null ||
+	sudo cp "$image_full_path" "/var/lib/wakame-vdc/images/$fname"
     bash "$image_full_path".install.sh auto
 ) ; prev-cmd-failed "Error while moving image to /var/lib/wakame-vdc/images/"
 
