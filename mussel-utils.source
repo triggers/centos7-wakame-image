@@ -35,7 +35,7 @@ bootone()
     bootsetup || return 255 # run this every time
     name="$1"
     basic="--cpu_cores=2 --memory_size=1024  --hypervisor=kvm"
-    specific="--image_id=wmi-${name}image --display_name=${name}"
+    specific="--image_id=wmi-${name} --display_name=${name}"
     $musselpath  instance create  $basic $specific --ssh_key_id=$(cat ./sshkeyid) --vifs="vifs.info"
 }
 
