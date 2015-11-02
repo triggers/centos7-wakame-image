@@ -36,7 +36,7 @@ CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
 	curl --fail "$CENTOSMIRROR/$CENTOSISO" -o "$SCRIPT_DIR/01-minimal-image/$CENTOSISO"
     fi
     md5sum "$SCRIPT_DIR/01-minimal-image/$CENTOSISO" >"$SCRIPT_DIR/01-minimal-image/$CENTOSISO.md5"
-) || reportfailed "Error while downloading ISO image"
+) ; prev-cmd-failed "Error while downloading ISO image"
 
 (
     [ -f "$SCRIPT_DIR/01-minimal-image/ks-sshpair.cfg" ]
@@ -56,7 +56,7 @@ $(< tmp-sshkeypair.pub)
 EOS
 %end
 EOF
-) || reportfailed "Error while creating custom ks file with ssh key"
+) ; prev-cmd-failed "Error while creating custom ks file with ssh key"
 
 (
     [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2" ]
@@ -65,7 +65,7 @@ EOF
     cd "$SCRIPT_DIR/01-minimal-image/"
     time ./centos-kickstart-build.sh "$CENTOSISO" ks-sshpair.cfg tmp.qcow2 1024M
     cp -al tmp.qcow2 minimal-image.qcow2
-) || reportfailed "Error while installing minimal image with kickstart"
+) ; prev-cmd-failed "Error while installing minimal image with kickstart"
 
 (
     [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz" ]
@@ -73,7 +73,7 @@ EOF
     set -e
     cd "$SCRIPT_DIR/01-minimal-image/"
     time tar czSvf minimal-image.qcow2.tar.gz minimal-image.qcow2
-) || reportfailed "Error while tarring minimal image"
+) ; prev-cmd-failed "Error while tarring minimal image"
 
 ## Public wakame build
 
@@ -85,7 +85,7 @@ EOF
     cp "$SCRIPT_DIR/01-minimal-image/runscript.sh" .
     tar -xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz"
     sed -i 's/tmp.qcow2/minimal-image.qcow2/' runscript.sh
-) || reportfailed "Error while extracting fresh minimal image"
+) ; prev-cmd-failed "Error while extracting fresh minimal image"
 
 (
     [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed" ] ||
@@ -106,7 +106,7 @@ EOF
 	sleep 10
     done
     [[ "$tryssh" = "it-worked" ]]
-) || reportfailed "Error while booting fresh minimal image"
+) ; prev-cmd-failed "Error while booting fresh minimal image"
 
 (
     [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed" ]
@@ -116,7 +116,7 @@ EOF
     "$SCRIPT_DIR/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y wakame-init
     touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed"
-) || reportfailed "Error while installing wakame-init"
+) ; prev-cmd-failed "Error while installing wakame-init"
 
 (
     [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown" ]
@@ -130,7 +130,7 @@ EOF
     done
     kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid") 2>/dev/null && exit
     touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown"
-) || reportfailed "Error while shutting down VM"
+) ; prev-cmd-failed "Error while shutting down VM"
 
 
 ## KCCS build
@@ -142,7 +142,7 @@ EOF
     cp "$SCRIPT_DIR/01-minimal-image/runscript.sh" .
     tar -xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz"
     sed -i 's/tmp.qcow2/minimal-image.qcow2/' runscript.sh
-) || reportfailed "Error while extracting fresh minimal image for KCCS additions"
+) ; prev-cmd-failed "Error while extracting fresh minimal image for KCCS additions"
 
 (
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-finished-additions" ] ||
@@ -163,7 +163,7 @@ EOF
 	sleep 10
     done
     [[ "$tryssh" = "it-worked" ]]
-) || reportfailed "Error while booting fresh minimal image for KCCS additions"
+) ; prev-cmd-failed "Error while booting fresh minimal image for KCCS additions"
 
 (
     # This is a duplicate of the above wakame-init step.  This is easier than
@@ -175,7 +175,7 @@ EOF
     "$SCRIPT_DIR/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y wakame-init
     touch "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed"
-) || reportfailed "Error while installing wakame-init"
+) ; prev-cmd-failed "Error while installing wakame-init"
 
 
 (
@@ -205,7 +205,7 @@ $tmptmp # temporary hack while writing/debugging
     tar czvf centos-7.x86_64.kvm.md.raw.tar.gz centos-7.x86_64.kvm.md.raw
     md5sum centos-7.x86_64.kvm.md.raw.tar.gz >centos-7.x86_64.kvm.md.raw.tar.gz.md5
     md5sum centos-7.x86_64.kvm.md.raw        >centos-7.x86_64.kvm.md.raw.md5
-) || reportfailed "Error while booting tarring image"
+) ; prev-cmd-failed "Error while booting tarring image"
 
 (
     [ -f "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz.install.sh" ]
@@ -213,4 +213,4 @@ $tmptmp # temporary hack while writing/debugging
     set -e
     cd "$SCRIPT_DIR/99-package-for-wakame-vdc/"
     ./output-image-install-script.sh centos-7.x86_64.kvm.md.raw.tar.gz
-) || reportfailed "Error while creating install script for image"
+) ; prev-cmd-failed "Error while creating install script for image"
