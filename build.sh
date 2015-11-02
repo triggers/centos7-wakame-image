@@ -20,7 +20,12 @@ CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
 	[[ "$(< "$SCRIPT_DIR/01-minimal-image/$CENTOSISO.md5")" = *$ISOMD5* ]]
     $skip_rest_if_already_done
     set -e
-    curl --fail "$CENTOSMIRROR/$CENTOSISO" -o "$SCRIPT_DIR/01-minimal-image/$CENTOSISO"
+    if [ -f "$CENTOSISO" ]; then
+	# to avoid the download while debugging
+	cp -al "$CENTOSISO" "$SCRIPT_DIR/01-minimal-image/$CENTOSISO"
+    else
+	curl --fail "$CENTOSMIRROR/$CENTOSISO" -o "$SCRIPT_DIR/01-minimal-image/$CENTOSISO"
+    fi
     md5sum "$SCRIPT_DIR/01-minimal-image/$CENTOSISO" >"$SCRIPT_DIR/01-minimal-image/$CENTOSISO.md5"
 ) || reportfailed "Error while downloading ISO image"
 
