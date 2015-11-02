@@ -61,6 +61,8 @@ EOF
     time tar czSvf minimal-image.qcow2.tar.gz minimal-image.qcow2
 ) || reportfailed "Error while tarring minimal image"
 
+## Public wakame build
+
 (
     [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.qcow2" ]
     $skip_rest_if_already_done
@@ -116,6 +118,75 @@ EOF
     touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown"
 ) || reportfailed "Error while shutting down VM"
 
+
+## KCCS build
+(
+    [ -f "$SCRIPT_DIR/03-kccs-additions/minimal-image.qcow2" ]
+    $skip_rest_if_already_done
+    set -e
+    cd "$SCRIPT_DIR/03-kccs-additions/"
+    cp "$SCRIPT_DIR/01-minimal-image/runscript.sh" .
+    tar -xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz"
+    sed -i 's/tmp.qcow2/minimal-image.qcow2/' runscript.sh
+) || reportfailed "Error while extracting fresh minimal image for KCCS additions"
+
+(
+    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-finished-additions" ] ||
+	{
+	    [ -f "$SCRIPT_DIR/03-kccs-additions/kvm.pid" ] &&
+		kill -0 $(< "$SCRIPT_DIR/03-kccs-additions/kvm.pid") 2>/dev/null
+	}
+    $skip_rest_if_already_done
+    set -e
+    cd "$SCRIPT_DIR/03-kccs-additions/"
+    ./runscript.sh >kvm.stdout 2>kvm.stderr &
+    sleep 10
+    kill -0 $(< "$SCRIPT_DIR/03-kccs-additions/kvm.pid")
+    for (( i=1 ; i<20 ; i++ )); do
+	tryssh="$("$SCRIPT_DIR/ssh-shortcut.sh" echo it-worked)" || :
+	[ "$tryssh" = "it-worked" ] && break
+	echo "$i/20 - Waiting 10 more seconds for ssh to connect..."
+	sleep 10
+    done
+    [[ "$tryssh" = "it-worked" ]]
+) || reportfailed "Error while booting fresh minimal image for KCCS additions"
+
+(
+    # This is a duplicate of the above wakame-init step.  This is easier than
+    # copying the image from 03-kccs-additions.
+    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed" ]
+    $skip_rest_if_already_done
+    set -e
+    repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
+    "$SCRIPT_DIR/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
+    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y wakame-init
+    touch "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed"
+) || reportfailed "Error while installing wakame-init"
+
+
+(
+    # This is a duplicate of the above wakame-init step.  This is easier than
+    # copying the image from 03-kccs-additions.
+    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed" ]
+    $skip_rest_if_already_done
+    set -e
+    repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
+    "$SCRIPT_DIR/ssh-shortcut.sh" <<'EOFssh'
+cat <<'EOS' > /etc/yum.repos.d/td.repo
+[treasuredata]
+name=TreasureData
+baseurl=http://packages.treasure-data.com/redhat/$basearch
+gpgcheck=0
+EOS
+EOFssh
+    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y td-agent
+    touch "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed"
+) || reportfailed "Error while installing wakame-init"
+
+
+$tmptmp # temporary hack while writing/debugging
+
+## final packaging
 (
     [ -f "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz" ]
     $skip_rest_if_already_done
