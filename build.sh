@@ -6,6 +6,15 @@ reportfailed()
     exit 255
 }
 
+prev-cmd-failed()
+{
+    # this is needed because '( cmd1 ; cmd2 ; set -e ; cmd3 ; cmd4 ) || reportfailed'
+    # does not work because the || disables set -e, even inside the subshell!
+    # see http://unix.stackexchange.com/questions/65532/why-does-set-e-not-work-inside
+    # A workaround is to do  '( cmd1 ; cmd2 ; set -e ; cmd3 ; cmd4 ) ; prev-cmd-failed'
+    (($? == 0)) || reportfailed "$*"
+}
+
 export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfail
 
 
@@ -178,8 +187,9 @@ EOF
     # we are already root and sudo complains about no tty , so strip sudo from the script
     curl -L https://toolbelt.treasuredata.com/sh/install-redhat-td-agent2.sh | sed 's/sudo//' | sh
 EOF
+    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi td-agent  # make sure rpm thinks it installed
     touch "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed"
-) || reportfailed "Error while installing wakame-init"
+) ; prev-cmd-failed "Error while installing td-agent"
 
 
 $tmptmp # temporary hack while writing/debugging
