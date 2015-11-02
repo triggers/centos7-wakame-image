@@ -165,21 +165,13 @@ EOF
 
 
 (
-    # This is a duplicate of the above wakame-init step.  This is easier than
-    # copying the image from 03-kccs-additions.
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed" ]
     $skip_rest_if_already_done
     set -e
-    repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
-    "$SCRIPT_DIR/ssh-shortcut.sh" <<'EOFssh'
-cat <<'EOS' > /etc/yum.repos.d/td.repo
-[treasuredata]
-name=TreasureData
-baseurl=http://packages.treasure-data.com/redhat/$basearch
-gpgcheck=0
-EOS
-EOFssh
-    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y td-agent
+    # from http://docs.fluentd.org/articles/install-by-rpm
+    "$SCRIPT_DIR/ssh-shortcut.sh" <<EOF
+    curl -L https://toolbelt.treasuredata.com/sh/install-redhat-td-agent2.sh | sh
+EOF
     touch "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed"
 ) || reportfailed "Error while installing wakame-init"
 
