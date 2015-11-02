@@ -211,6 +211,28 @@ EOF
 ) ; prev-cmd-failed "Error while installing td-agent"
 
 
+# Zabbix
+# http://www.unixmen.com/how-to-install-zabbix-server-on-centos-7/
+(
+    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-zabbix-installed" ]
+    $skip_rest_if_already_done
+    set -e
+    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y epel-release
+    "$SCRIPT_DIR/ssh-shortcut.sh" rpm --import http://repo.zabbix.com/RPM-GPG-KEY-ZABBIX
+    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -Uv  http://repo.zabbix.com/zabbix/2.4/rhel/7/x86_64/zabbix-release-2.4-1.el7.noarch.rpm
+
+    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y zabbix
+    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y zabbix-agent
+    # TODO: double check the next line.  An install specific to Centos 7 does not seem to be available
+    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -Uvh http://repo.zabbix.jp/relatedpkgs/rhel6/x86_64/zabbix-jp-release-6-6.noarch.rpm    
+
+    # make sure rpm thinks all was installed
+    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi zabbix  
+    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi zabbix-agent
+    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi zabbix-jp-release
+    touch "$SCRIPT_DIR/03-kccs-additions/flag-zabbix-installed"
+) ; prev-cmd-failed "Error while installing zabbix"
+
 $tmptmp # temporary hack while writing/debugging
 
 ## final packaging
