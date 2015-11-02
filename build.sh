@@ -180,6 +180,22 @@ EOF
     touch "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed"
 ) ; prev-cmd-failed "Error while installing wakame-init"
 
+simple-yum-install()
+{
+    package="$1"
+    (
+	[ -f "$SCRIPT_DIR/03-kccs-additions/flag-$package-installed" ]
+	$skip_rest_if_already_done
+	set -e
+	"$SCRIPT_DIR/ssh-shortcut.sh" yum install -y $package
+	"$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi $package  # make sure rpm thinks it installed
+	touch "$SCRIPT_DIR/03-kccs-additions/flag-$package-installed"
+    ) ; prev-cmd-failed "Error while installing $package"
+}
+
+for p in bash openssl openssl098e glibc-common glibc; do
+    simple-yum-install $p
+done
 
 (
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed" ]
