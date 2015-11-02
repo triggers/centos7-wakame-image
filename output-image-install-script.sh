@@ -162,7 +162,8 @@ for i in "\$@"; do
     bo | backupobject) backupobject-add;;
     img | image) image-add ;;
     auto) do-auto ;;
-    show) 
+    show)
+       set +e
        get-backupobject-status
        get-image-status
        ;;
