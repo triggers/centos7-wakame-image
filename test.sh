@@ -15,7 +15,7 @@ prev-cmd-failed()
     (($? == 0)) || reportfailed "$*"
 }
 
-export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfail
+export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfailed
 
 
 : ${skip_rest_if_already_done:=eval ((\$?))||exit 0} # exit (sub)process if return code is 0
@@ -23,18 +23,18 @@ export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || report
 if [ "$1" == default ]; then
     ./build.sh
     # default to public image
-    image_full_path="$(readlink -f "99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz")" || reportfail "problem with default image"
+    image_full_path="$(readlink -f "99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz")" || reportfailed "problem with default image"
     testuuid=centos7
 else
-    image_full_path="$(readlink -f "$1")" || reportfail "problem with $1"
-    [ -f "$image_full_path" ] || reportfail "$1 is not a file"
+    image_full_path="$(readlink -f "$1")" || reportfailed "problem with $1"
+    [ -f "$image_full_path" ] || reportfailed "$1 is not a file"
     [ -f "$image_full_path".install.sh ] || "Image's *.install.sh script is not in same directory"
     testuuid="$2"
 fi
     
 fname="${image_full_path##*/}"
 
-[ -d /var/lib/wakame-vdc/images/ ] || reportfail "wakame image directory not found"
+[ -d /var/lib/wakame-vdc/images/ ] || reportfailed "wakame image directory not found"
 
 # TODO: be smarter about if the existing image is the same as $image_full_path
 if [ -f "/var/lib/wakame-vdc/images/$fname" ]; then
