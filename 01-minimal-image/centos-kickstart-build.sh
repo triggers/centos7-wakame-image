@@ -139,8 +139,17 @@ echo "$!" >kvm.pid
 
 sleep 15
 
+# Old versions of KVM do not support shift-semicolon or semicolon, so
+# starting with 'keypresses="tab spc k s equal" bash -x ./build.sh'
+# will allow the rest initial command line to be typed in manually.
+# A VNC based solution is also possible, but not currently implemented.
+
+[ "$keypresses" = "" ] && \
+    keypresses="tab spc k s equal h d shift-semicolon f d 0 shift-semicolon  slash k s dot c f g ret"
+
+
 # send "<tab><space>ks=hd:fd0:/ks.cfg"
-for k in tab spc k s equal h d shift-semicolon f d 0 shift-semicolon  slash k s dot c f g ret
+for k in $keypresses
 do
     echo sendkey $k | nc 127.0.0.1 4567
     sleep 1
