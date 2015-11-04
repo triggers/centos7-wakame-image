@@ -84,7 +84,7 @@ EOF
     set -e
     cd "$SCRIPT_DIR/02-image-plus-wakame-init/"
     cp "$SCRIPT_DIR/01-minimal-image/runscript.sh" .
-    tar -xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz"
+    tar xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz"
     sed -i 's/tmp.qcow2/minimal-image.qcow2/' runscript.sh
 ) ; prev-cmd-failed "Error while extracting fresh minimal image"
 
@@ -144,7 +144,7 @@ EOF
     set -e
     cd "$SCRIPT_DIR/03-kccs-additions/"
     cp "$SCRIPT_DIR/01-minimal-image/runscript.sh" .
-    tar -xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz"
+    tar xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz"
     sed -i 's/tmp.qcow2/minimal-image.qcow2/' runscript.sh
 ) ; prev-cmd-failed "Error while extracting fresh minimal image for KCCS additions"
 
