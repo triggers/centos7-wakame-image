@@ -59,7 +59,8 @@ EOF
 ) ; prev-cmd-failed "Error while creating custom ks file with ssh key"
 
 (
-    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2" ]
+    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2" ] || \
+	    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz" ]
     $skip_rest_if_already_done
     set -e
     cd "$SCRIPT_DIR/01-minimal-image/"
