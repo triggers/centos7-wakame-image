@@ -5,6 +5,8 @@ kickstart_file="$2"
 target_image="$3"
 memory="$4"
 
+: ${KVMSTYLE:=wakame}
+
 reportfailed()
 {
     echo "Script failed...exiting. ($*)" 1>&2
@@ -65,22 +67,64 @@ for i in "${binlist[@]}"; do
     fi
 done
 
+
 # TODO: parameterize more of the KVM parameters
-kvmcmdline=(
-    "$KVMBIN"
-    -name ksvm
+case "$KVMSTYLE" in
+    packer)
+	# this command line comes from modifying what packer used
+	kvmcmdline=(
+	    "$KVMBIN"
+	    -name ksvm
+	    
+	    -fda "$KSFPY"
+	    -device virtio-net,netdev=user.0
+	    -drive "file=$target_image,if=virtio,cache=writeback,discard=ignore"
+	    
+	    -m "$memory"
+	    -machine type=pc,accel=kvm
+	    
+	    -netdev user,id=user.0,hostfwd=tcp::2224-:22
+	    -monitor telnet:0.0.0.0:4567,server,nowait
+	    -vnc 0.0.0.0:47
+	)
+	;;
+    wakame)
+	# The packer cmdline does not work with the verson of KVM
+	# installed with Wakame-vdc. For example, it complains about
+	# ",discard=ignore" and the -device parameter. So here is another
+	# cmdline that is based on one used by Wakame-vdc.
+	kvmcmdline=(
+	    "$KVMBIN"
+	    -fda "$KSFPY"
 
-    -fda "$KSFPY"
-    -device virtio-net,netdev=user.0
-    -drive "file=$target_image,if=virtio,cache=writeback,discard=ignore"
-
-    -m "$memory"
-    -machine type=pc,accel=kvm
-
-    -netdev user,id=user.0,hostfwd=tcp::2224-:22
-    -monitor telnet:0.0.0.0:4567,server,nowait
-    -vnc 0.0.0.0:47
-    )
+	    -m "$memory"
+	    -smp 2
+	    -name vdc-i-45pkc5fd
+	    
+#	    -pidfile /var/lib/wakame-vdc/instances/i-45pkc5fd/kvm.pid
+#	    -daemonize
+#	    -monitor telnet:127.0.0.1:29684,server,nowait
+	    
+	    -monitor telnet:127.0.0.1:4567,server,nowait
+	    -no-kvm-pit-reinjection
+#	    -vnc 127.0.0.1:26857
+    	    -vnc 127.0.0.1:47
+#	    -serial telnet:127.0.0.1:32479,server,nowait
+	    -serial telnet:127.0.0.1:4568,server,nowait
+	    -drive "file=$target_image,id=vol-tu3y7qj4-drive,if=none,serial=vol-tu3y7qj4,cache=none,aio=native"
+	    -device virtio-blk-pci,id=vol-tu3y7qj4,drive=vol-tu3y7qj4-drive,bootindex=0,bus=pci.0,addr=0x4
+	    
+#	    -drive file=/var/lib/wakame-vdc/instances/i-45pkc5fd/metadata.img,id=metadata-drive,if=none,serial=metadata,cache=none,aio=native
+#	    -device virtio-blk-pci,id=metadata,drive=metadata-drive,bus=pci.0,addr=0x5
+	    
+	    -net nic,vlan=0,macaddr=52:54:00:65:28:dd,model=virtio,addr=10
+#	    -net tap,vlan=0,ifname=vif-b5h2nea0,script=no,downscript=no
+	    -net user,vlan=0,hostfwd=tcp::2224-:22
+	)
+	;;
+    *) reportfailed '$KVMSTYLE'
+       ;;
+esac
 
 cat >runscript.sh <<EOF
 ${kvmcmdline[@]} &
