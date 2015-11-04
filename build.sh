@@ -266,7 +266,7 @@ package-steps()
 	set -e
 	cp -al "$source" "${target%.tar.gz}"
 	cd "$targetDIR"
-	tar czvf "$target" "${targetNAME%.tar.gz}"
+	tar czSvf "$target" "${targetNAME%.tar.gz}"
 	md5sum "${targetNAME}" >"${targetNAME}".md5
 	md5sum "${targetNAME%.tar.gz}" >"${targetNAME%.tar.gz}".md5
     ) ; prev-cmd-failed "Error while booting tarring image: $targetNAME"
@@ -288,4 +288,4 @@ package-steps \
 export UUID=centos7k
 package-steps \
     "$SCRIPT_DIR/03-kccs-additions/minimal-image.qcow2" \
-    "$SCRIPT_DIR/99k-package-for-kccs/centos-7.x86_64.kvm.md.raw.tar.gz"
+    "$SCRIPT_DIR/99k-package-for-kccs/centos-7k.x86_64.kvm.md.raw.tar.gz"
