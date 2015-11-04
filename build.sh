@@ -15,7 +15,7 @@ prev-cmd-failed()
     (($? == 0)) || reportfailed "$*"
 }
 
-export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfail
+export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfailed
 
 
 : ${skip_rest_if_already_done:=eval ((\$?))||exit 0} # exit (sub)process if return code is 0

@@ -35,7 +35,7 @@ prev-cmd-failed()
 # Make sure it is writable
 touch "$target_image" || reportfailed "Could not create '$target_image' (the third parameter)"
 
-export TARGET_DIR="$(cd "$(dirname "$(readlink -f "$target_dir")")" && pwd -P)" || reportfail
+export TARGET_DIR="$(cd "$(dirname "$(readlink -f "$target_dir")")" && pwd -P)" || reportfailed
 
 KSFPY="$TARGET_DIR/kickstart_floppy.img"
 
