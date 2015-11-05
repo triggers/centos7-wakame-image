@@ -370,7 +370,7 @@ package-steps()
 	lsout="$(ls -l "${target%.tar.gz}")" && read t1 t2 t3 t4 fsize rest <<<"$lsout"
 	echo "$fsize" >"${target%.raw.tar.gz}".qcow2.rawsize
 	
-	qemu-img convert -f raw -O qcow2 "${target%.tar.gz}" "${qcowtarget%.gz}"
+	qemu-img convert -f raw -O qcow2 -o compat=0.10 "${target%.tar.gz}" "${qcowtarget%.gz}"
 	md5sum "${qcowtarget%.gz}" >"${qcowtarget%.gz}".md5
 	ls -l "${qcowtarget%.gz}" >"${qcowtarget%.gz}".lsl
     ) ; prev-cmd-failed "Error converting image to qcow2 format: $targetNAME"
