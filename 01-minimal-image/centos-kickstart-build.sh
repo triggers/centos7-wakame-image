@@ -54,7 +54,7 @@ KSFPY="$TARGET_DIR/kickstart_floppy.img"
     set -e
     rm -f "$target_image"
     qemu-img create -f raw "$target_image" 10000M
-) ; prev-cmd-failed "Problem while creating empty qcow2 image"
+) ; prev-cmd-failed "Problem while creating empty raw image"
 
 binlist=(
     /usr/libexec/qemu-kvm

@@ -95,33 +95,33 @@ EOF
 ) ; prev-cmd-failed "Error while creating custom ks file with ssh key"
 
 (
-    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2" ] || \
-	    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz" ]
+    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.raw" ] || \
+	    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.raw.tar.gz" ]
     $skip_rest_if_already_done
     set -e
     cd "$SCRIPT_DIR/01-minimal-image/"
-    time ./centos-kickstart-build.sh "$CENTOSISO" ks-sshpair.cfg tmp.qcow2 1024M
-    cp -al tmp.qcow2 minimal-image.qcow2
+    time ./centos-kickstart-build.sh "$CENTOSISO" ks-sshpair.cfg tmp.raw 1024M
+    cp -al tmp.raw minimal-image.raw
 ) ; prev-cmd-failed "Error while installing minimal image with kickstart"
 
 (
-    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz" ]
+    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.raw.tar.gz" ]
     $skip_rest_if_already_done
     set -e
     cd "$SCRIPT_DIR/01-minimal-image/"
-    time tar czSvf minimal-image.qcow2.tar.gz minimal-image.qcow2
+    time tar czSvf minimal-image.raw.tar.gz minimal-image.raw
 ) ; prev-cmd-failed "Error while tarring minimal image"
 
 ## Public wakame build
 
 (
-    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.qcow2" ]
+    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.raw" ]
     $skip_rest_if_already_done
     set -e
     cd "$SCRIPT_DIR/02-image-plus-wakame-init/"
     cp "$SCRIPT_DIR/01-minimal-image/runscript.sh" .
-    tar xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz"
-    sed -i 's/tmp.qcow2/minimal-image.qcow2/' runscript.sh
+    tar xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.raw.tar.gz"
+    sed -i 's/tmp.raw/minimal-image.raw/' runscript.sh
 ) ; prev-cmd-failed "Error while extracting fresh minimal image"
 
 (
@@ -177,13 +177,13 @@ EOF
 
 ## KCCS build
 (
-    [ -f "$SCRIPT_DIR/03-kccs-additions/minimal-image.qcow2" ]
+    [ -f "$SCRIPT_DIR/03-kccs-additions/minimal-image.raw" ]
     $skip_rest_if_already_done
     set -e
     cd "$SCRIPT_DIR/03-kccs-additions/"
     cp "$SCRIPT_DIR/01-minimal-image/runscript.sh" .
-    tar xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.qcow2.tar.gz"
-    sed -i 's/tmp.qcow2/minimal-image.qcow2/' runscript.sh
+    tar xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.raw.tar.gz"
+    sed -i 's/tmp.raw/minimal-image.raw/' runscript.sh
 ) ; prev-cmd-failed "Error while extracting fresh minimal image for KCCS additions"
 
 (
@@ -359,10 +359,10 @@ package-steps()
 
 export UUID=centos7
 package-steps \
-    "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.qcow2" \
+    "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.raw" \
     "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz"
 
 export UUID=centos7k
 package-steps \
-    "$SCRIPT_DIR/03-kccs-additions/minimal-image.qcow2" \
+    "$SCRIPT_DIR/03-kccs-additions/minimal-image.raw" \
     "$SCRIPT_DIR/99k-package-for-kccs/centos-7k.x86_64.kvm.md.raw.tar.gz"
