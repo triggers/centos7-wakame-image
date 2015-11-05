@@ -12,33 +12,26 @@ file-size()
     echo "$fsize"
 }
 
-output-image-install-script()
+output-qcow-image-install-script()
 {
-    seedtar="$1"
-    [ -f "$seedtar" ] || reportfailed "File '$seedtar' not found"
-    [[ "$seedtar" == *.raw.tar.gz ]] || reportfailed "Expecting *.raw.tar.gz file"
+    seedqcow="$1"
+    [ -f "$seedqcow" ] || reportfailed "File '$seedqcow' not found"
+    [[ "$seedqcow" == *.qcow2.gz ]] || reportfailed "Expecting *.qcow2.gz file"
+    [ -f "${seedqcow%.gz}.rawsize" ] || reportfailed "File '${seedqcow%.gz}.rawsize' is also required"
 
     # gather info about seed image
-    size=$(
-	# e.g.: -rw-r--r-- root/root 4294967296 2015-04-06 15:35 centos-6.6.i686.kvm.md.raw
-	tar tzvf "$seedtar" |
-	    while read perms owner thesize therest1; do
-		if [[ "$therest1" == *${seedtar%.tar.gz}* ]]; then
-		    echo "$thesize"
-		    break
-		fi
-	    done
-	)
+    size=$(< ${seedqcow%.gz}.rawsize)
+
     [ "${size//[0-9]/}" = "" ] && [ "$size" != "" ] || reportfailed "Error extracting size from tar file"
-    allocation_size=$(stat -c '%s' "${seedtar}")
-    read checksum therest2 <<<"$(md5sum "${seedtar}")"
+    allocation_size=$(stat -c '%s' "${seedqcow}")
+    read checksum therest2 <<<"$(md5sum "${seedqcow}")"
 
     if [ "$ARCH" == "" ]; then
 	ARCH="x86_64"
     fi
 
     if [ "$UUID" == "" ]; then  # do not prefix with bo- or wmi-
-	UUID="${seedtar%%[-._]*}"
+	UUID="${seedqcow%%[-._]*}"
     fi
     
     if [ "$ACCOUNTID" == "" ]; then
@@ -50,14 +43,14 @@ output-image-install-script()
     fi
 
     if [ "$DISPLAYNAME" == "" ]; then
-	DISPLAYNAME="$seedtar $size"
+	DISPLAYNAME="$seedqcow $size"
     fi
 
     if [ "$DESCRIPTION" == "" ]; then
-	DESCRIPTION="$seedtar local"
+	DESCRIPTION="$seedqcow local"
     fi
 
-    cat >"$seedtar.install.sh" <<EOF
+    cat >"$seedqcow.install.sh" <<EOF
 backupobject-add()
 {
   ( set -x
@@ -66,8 +59,8 @@ backupobject-add()
     --account-id=$ACCOUNTID \\
     --storage-id=$STORAGEID \\
     --display-name="$DISPLAYNAME" \\
-    --object-key=$seedtar \\
-    --container-format=tgz \\
+    --object-key=$seedqcow \\
+    --container-format=gz \\
     --size=$size \\
     --allocation-size=$allocation_size \\
     --checksum=$checksum
@@ -173,4 +166,4 @@ done
 EOF
 }
 
-output-image-install-script "$@"
+output-qcow-image-install-script "$@"

@@ -337,6 +337,7 @@ package-steps()
     target="$2"
     targetDIR="${2%/*}"
     targetNAME="${2##*/}"
+    qcowtarget="${target%.raw.tar.gz}.qcow2.gz"
     (
 	[ -f "$target" ]
 	$skip_rest_if_already_done
@@ -354,7 +355,41 @@ package-steps()
 	set -e
 	cd "$targetDIR"
 	../output-image-install-script.sh "$targetNAME"
-    ) ; prev-cmd-failed "Error while creating install script for image: $targetNAME"
+    ) ; prev-cmd-failed "Error while creating install script for raw image: $targetNAME"
+
+    (
+	[ -f "${qcowtarget%.gz}" ] || [ -f "$qcowtarget" ]
+	$skip_rest_if_already_done
+	set -e
+	cd "$targetDIR"
+	[ -f "${target%.tar.gz}" ]
+
+	# remember the size of the raw file, since it is hard to get that
+	# information from the qcow2.gz file without expanding it
+	lsout="$(ls -l "${target%.tar.gz}")" && read t1 t2 t3 t4 fsize rest <<<"$lsout"
+	echo "$fsize" >"${target%.raw.tar.gz}".qcow2.rawsize
+	
+	qemu-img convert -f raw -O qcow2 "${target%.tar.gz}" "${qcowtarget%.gz}"
+	md5sum "${qcowtarget%.gz}" >"${qcowtarget%.gz}".md5
+	ls -l "${qcowtarget%.gz}" >"${qcowtarget%.gz}".lsl
+    ) ; prev-cmd-failed "Error converting image to qcow2 format: $targetNAME"
+
+    (
+	[ -f "$qcowtarget" ]
+	$skip_rest_if_already_done
+	set -e
+	cd "$targetDIR"
+	gzip "${qcowtarget%.gz}"
+	md5sum "$qcowtarget" >"$qcowtarget".md5
+    ) ; prev-cmd-failed "Error while running gzip on the qcow2 image: $qcowtarget"
+
+    (
+	[ -f "$qcowtarget".gz.install.sh ]
+	$skip_rest_if_already_done
+	set -e
+	cd "$targetDIR"
+	../output-qcow-image-install-script.sh "$qcowtarget"
+    ) ; prev-cmd-failed "Error while creating install script for qcow image: $qcowtarget"
 }
 
 export UUID=centos7
