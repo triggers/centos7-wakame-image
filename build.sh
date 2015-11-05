@@ -209,7 +209,7 @@ EOF
 
 (
     # This is a duplicate of the above wakame-init step.  This is easier than
-    # copying the image from 03-kccs-additions.
+    # copying the image from ./02-image-plus-wakame-init/
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed" ]
     $skip_rest_if_already_done
     set -e
