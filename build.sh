@@ -338,6 +338,7 @@ package-steps()
     targetDIR="${2%/*}"
     targetNAME="${2##*/}"
     qcowtarget="${target%.raw.tar.gz}.qcow2.gz"
+    qcowNAME="${qcowtarget##*/}"
     (
 	[ -f "$target" ]
 	$skip_rest_if_already_done
@@ -388,7 +389,7 @@ package-steps()
 	$skip_rest_if_already_done
 	set -e
 	cd "$targetDIR"
-	../output-qcow-image-install-script.sh "$qcowtarget"
+	../output-qcow-image-install-script.sh "$qcowNAME"
     ) ; prev-cmd-failed "Error while creating install script for qcow image: $qcowtarget"
 }
 
@@ -397,7 +398,7 @@ package-steps \
     "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.raw" \
     "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz"
 
-export UUID=centos7k
+export UUID=centos71std
 package-steps \
     "$SCRIPT_DIR/03-kccs-additions/minimal-image.raw" \
-    "$SCRIPT_DIR/99k-package-for-kccs/centos-7k.x86_64.kvm.md.raw.tar.gz"
+    "$SCRIPT_DIR/99k-package-for-kccs/centos71std-01.1511.raw.tar.gz"
