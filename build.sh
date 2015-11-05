@@ -24,6 +24,21 @@ CENTOSISO="CentOS-7-x86_64-Minimal-1503-01.iso"
 ISOMD5="d07ab3e615c66a8b2e9a50f4852e6a77"
 CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
 
+# This function is piped and run through ssh below
+patch-wakame-init()
+{
+    org="$(cat /etc/wakame-init)"
+    beforeNICequals="${org%nic=*}"
+    afterNICequals="${org##*nic=}"
+    # Now rewrite the line by inserting new code and commenting out the old code
+    {
+	echo -n "$beforeNICequals"
+	# the grep will output something like this: /sys/class/net/nestbr0/address:b6:21:21:a2:8f:bf
+	echo -n 'IFS=/ read xempty xsys xclass xnet nic therest <<<"$(grep "$mac" /sys/class/net/*/address)" ## '
+	echo  "$afterNICequals"
+    } >/etc/wakame-init
+}
+
 (
     [ -f "$SCRIPT_DIR/01-minimal-image/$CENTOSISO" ] &&
 	[[ "$(< "$SCRIPT_DIR/01-minimal-image/$CENTOSISO.md5")" = *$ISOMD5* ]]
@@ -117,6 +132,7 @@ EOF
     "$SCRIPT_DIR/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y net-tools
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y wakame-init
+    "$SCRIPT_DIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
     touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed"
 ) ; prev-cmd-failed "Error while installing wakame-init"
 
@@ -180,6 +196,7 @@ EOF
     "$SCRIPT_DIR/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y net-tools
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y wakame-init
+    "$SCRIPT_DIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
     touch "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed"
 ) ; prev-cmd-failed "Error while installing wakame-init"
 
