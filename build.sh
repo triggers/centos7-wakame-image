@@ -115,6 +115,7 @@ EOF
     set -e
     repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
     "$SCRIPT_DIR/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
+    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y net-tools
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y wakame-init
     touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed"
 ) ; prev-cmd-failed "Error while installing wakame-init"
@@ -177,6 +178,7 @@ EOF
     set -e
     repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
     "$SCRIPT_DIR/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
+    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y net-tools
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y wakame-init
     touch "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed"
 ) ; prev-cmd-failed "Error while installing wakame-init"
