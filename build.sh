@@ -24,6 +24,10 @@ CENTOSISO="CentOS-7-x86_64-Minimal-1503-01.iso"
 ISOMD5="d07ab3e615c66a8b2e9a50f4852e6a77"
 CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
 
+######################################################################
+## Functions
+######################################################################
+
 # This function is piped and run through ssh below
 patch-wakame-init()
 {
@@ -38,6 +42,23 @@ patch-wakame-init()
 	echo  "$afterNICequals"
     } >/etc/wakame-init
 }
+
+simple-yum-install()
+{
+    package="$1"
+    (
+	[ -f "$SCRIPT_DIR/03-kccs-additions/flag-$package-installed" ]
+	$skip_rest_if_already_done
+	set -e
+	"$SCRIPT_DIR/ssh-shortcut.sh" yum install -y $package
+	"$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi $package  # make sure rpm thinks it installed
+	touch "$SCRIPT_DIR/03-kccs-additions/flag-$package-installed"
+    ) ; prev-cmd-failed "Error while installing $package"
+}
+
+######################################################################
+## Build Steps
+######################################################################
 
 (
     [ -f "$SCRIPT_DIR/01-minimal-image/$CENTOSISO" ] &&
@@ -199,19 +220,6 @@ EOF
     "$SCRIPT_DIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
     touch "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed"
 ) ; prev-cmd-failed "Error while installing wakame-init"
-
-simple-yum-install()
-{
-    package="$1"
-    (
-	[ -f "$SCRIPT_DIR/03-kccs-additions/flag-$package-installed" ]
-	$skip_rest_if_already_done
-	set -e
-	"$SCRIPT_DIR/ssh-shortcut.sh" yum install -y $package
-	"$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi $package  # make sure rpm thinks it installed
-	touch "$SCRIPT_DIR/03-kccs-additions/flag-$package-installed"
-    ) ; prev-cmd-failed "Error while installing $package"
-}
 
 for p in bash openssl openssl098e glibc-common glibc; do
     simple-yum-install $p
