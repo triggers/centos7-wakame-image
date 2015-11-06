@@ -432,4 +432,5 @@ package-steps \
 export UUID=centos71std
 package-steps \
     "$SCRIPT_DIR/03-kccs-additions/minimal-image.raw" \
-    "$SCRIPT_DIR/99k-package-for-kccs/centos71std-01.1511.raw.tar.gz"
+    "$SCRIPT_DIR/99k-package-for-kccs/centos71std-01.15111.raw.tar.gz"
+
