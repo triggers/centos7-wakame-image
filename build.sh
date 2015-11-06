@@ -258,8 +258,35 @@ REMOTESCRIPT
 ) ; prev-cmd-failed "Error while adding user account"
 
 (
-    # This is a duplicate of the above wakame-init step.  This is easier than
-    # copying the image from ./02-image-plus-wakame-init/
+    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-copy-step" ]
+    $skip_rest_if_already_done
+    set -e
+    repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
+    "$SCRIPT_DIR/ssh-shortcut.sh" <<REMOTESCRIPT
+set -e
+
+cat >/etc/default/wakame-init <<'EOF'
+$(< "$SCRIPT_DIR/copied-from-mita-tools/sento_std/guestroot/etc/default/wakame-init")
+EOF
+chmod 644 /etc/default/wakame-init
+
+mkdir -p /etc/zabbix
+cat >/etc/zabbix/zabbix_agentd.conf.tmpl <<'EOF'
+$(< "$SCRIPT_DIR/copied-from-mita-tools/sento_std/zabbix_agentd.conf.tmpl")
+EOF
+chmod 644 /etc/zabbix/zabbix_agentd.conf.tmpl
+
+mkdir -p /etc/td-agent
+cat >/etc/td-agent/td-agent <<'EOF'
+$(< "$SCRIPT_DIR/copied-from-mita-tools/sento_std/td-agent.conf")
+EOF
+chmod 644 /etc/td-agent/td-agent
+
+REMOTESCRIPT
+    touch "$SCRIPT_DIR/03-kccs-additions/flag-copy-step"
+) ; prev-cmd-failed "Error while installing wakame-init"
+
+(
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed" ]
     $skip_rest_if_already_done
     set -e
@@ -275,7 +302,6 @@ REMOTESCRIPT
     "$SCRIPT_DIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
     touch "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed"
 ) ; prev-cmd-failed "Error while installing wakame-init"
-exit
 
 for p in bash openssl openssl098e glibc-common glibc; do
     simple-yum-install $p
@@ -293,7 +319,6 @@ EOF
     "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi td-agent  # make sure rpm thinks it installed
     touch "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed"
 ) ; prev-cmd-failed "Error while installing td-agent"
-
 
 # Zabbix
 # http://www.unixmen.com/how-to-install-zabbix-server-on-centos-7/
