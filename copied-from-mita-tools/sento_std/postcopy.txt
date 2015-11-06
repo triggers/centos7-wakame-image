@@ -1,0 +1,1 @@
+guestroot/etc/resolv.conf /etc/resolv.conf mode=644

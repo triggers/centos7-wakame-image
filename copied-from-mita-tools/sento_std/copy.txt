@@ -1,0 +1,3 @@
+guestroot/etc/default/wakame-init /etc/default/wakame-init            mode=644
+zabbix_agentd.conf.tmpl           /etc/zabbix/zabbix_agentd.conf.tmpl mode=644
+td-agent.conf                     /etc/td-agent/td-agent.conf         mode=644
