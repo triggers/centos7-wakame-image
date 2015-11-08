@@ -56,6 +56,48 @@ simple-yum-install()
     ) ; prev-cmd-failed "Error while installing $package"
 }
 
+run-mita-script-remotely()
+{
+    scriptpath="$1"
+
+    echo
+    echo "Running script in VM:  $scriptpath"
+    
+    "$SCRIPT_DIR/ssh-shortcut.sh" <<REMOTESCRIPT
+# Copied from vmbuilder/kvm/rhel/6/functions/distro.sh
+set -x
+date
+$(< "$SCRIPT_DIR/copied-from-vmbuilder/distro.sh")
+
+## The above scripts require run_in_target() which is defined
+## in vmapp/tmp/vmbuilder/kvm/rhel/6/functions/utils.sh and
+## uses chroot.  We are executing directly on the OS, so
+## include a pass-through version of run_in_target():
+
+$( cat <<'VERBATIM' # make it unnecessary to excape all the dollar signs:
+  function run_in_target() {
+    local chroot_dir=$1; shift; local args="$*"
+    bash -e -c "${args}" ##  Just run without chroot
+  }
+  export -f run_in_target
+VERBATIM
+
+## Many of the scripts also use chroot directly:
+chroot() { shift ; "\$@" ; }  # disable chroot
+
+# The first parameter to scripts is supposed to be the chroot
+# directory, so it must exist to pass error checking.  For the
+# run_in_target calls, it is ignored.  For the non-run_in_target
+# calls, it has to be "/" so when it gets prepended to paths, it comes
+# out as "//", which is equivalent to "/".
+
+# call script with one parameter (/)
+set -x
+set -- "/"
+$(< "$scriptpath")
+REMOTESCRIPT
+}
+
 ######################################################################
 ## Build Steps
 ######################################################################
@@ -287,6 +329,18 @@ REMOTESCRIPT
 ) ; prev-cmd-failed "Error while installing wakame-init"
 
 (
+    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-ran-xexecscript.d-scripts" ]
+    $skip_rest_if_already_done
+    set -e
+    repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
+    find "$SCRIPT_DIR/copied-from-mita-tools/xexecscript.d/" -name '*.sh' | \
+	while read ln; do
+	    run-mita-script-remotely "$ln"
+	done
+    touch "$SCRIPT_DIR/03-kccs-additions/flag-ran-xexecscript.d-scripts"
+) ; prev-cmd-failed "Error while running xexecscript.d scripts"
+
+(
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed" ]
     $skip_rest_if_already_done
     set -e
@@ -302,6 +356,7 @@ REMOTESCRIPT
     "$SCRIPT_DIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
     touch "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed"
 ) ; prev-cmd-failed "Error while installing wakame-init"
+exit
 
 for p in bash openssl openssl098e glibc-common glibc; do
     simple-yum-install $p
