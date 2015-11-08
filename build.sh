@@ -330,12 +330,26 @@ REMOTESCRIPT
 ) ; prev-cmd-failed "Error while installing wakame-init"
 
 (
+    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed" ]
+    $skip_rest_if_already_done
+    set -e
+    # from http://docs.fluentd.org/articles/install-by-rpm
+    "$SCRIPT_DIR/ssh-shortcut.sh" <<EOF
+    # we are already root and sudo complains about no tty , so strip sudo from the script
+    curl -L https://toolbelt.treasuredata.com/sh/install-redhat-td-agent2.sh | sed 's/sudo//' | sh
+EOF
+    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi td-agent  # make sure rpm thinks it installed
+    touch "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed"
+) ; prev-cmd-failed "Error while installing td-agent"
+
+(
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-ran-xexecscript.d-scripts" ]
     $skip_rest_if_already_done
     set -e
     repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
     find "$SCRIPT_DIR/copied-from-mita-tools/xexecscript.d/" -name '*.sh' | \
 	while read ln; do
+	    [[ "$ln" == *install_td-agent* ]] && continue
 	    run-mita-script-remotely "$ln"
 	done
     touch "$SCRIPT_DIR/03-kccs-additions/flag-ran-xexecscript.d-scripts"
@@ -362,19 +376,6 @@ exit
 for p in bash openssl openssl098e glibc-common glibc; do
     simple-yum-install $p
 done
-
-(
-    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed" ]
-    $skip_rest_if_already_done
-    set -e
-    # from http://docs.fluentd.org/articles/install-by-rpm
-    "$SCRIPT_DIR/ssh-shortcut.sh" <<EOF
-    # we are already root and sudo complains about no tty , so strip sudo from the script
-    curl -L https://toolbelt.treasuredata.com/sh/install-redhat-td-agent2.sh | sed 's/sudo//' | sh
-EOF
-    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi td-agent  # make sure rpm thinks it installed
-    touch "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed"
-) ; prev-cmd-failed "Error while installing td-agent"
 
 # Zabbix
 # http://www.unixmen.com/how-to-install-zabbix-server-on-centos-7/
