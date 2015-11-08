@@ -365,6 +365,11 @@ EOF
     touch "$SCRIPT_DIR/03-kccs-additions/flag-finished-additions"
 ) ; prev-cmd-failed "Error while installing zabbix"
 
+# these are needed for the xexecscript.d scripts
+for p in ntp iptables-services; do
+    simple-yum-install $p
+done
+
 (
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-ran-xexecscript.d-scripts" ]
     $skip_rest_if_already_done
@@ -396,7 +401,6 @@ REMOTESCRIPT
     "$SCRIPT_DIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
     touch "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed"
 ) ; prev-cmd-failed "Error while installing wakame-init"
-exit
 
 for p in bash openssl openssl098e glibc-common glibc; do
     simple-yum-install $p
