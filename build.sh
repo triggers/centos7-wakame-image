@@ -80,10 +80,11 @@ $( cat <<'VERBATIM' # make it unnecessary to excape all the dollar signs:
     bash -e -c "${args}" ##  Just run without chroot
   }
   export -f run_in_target
-VERBATIM
 
-## Many of the scripts also use chroot directly:
-chroot() { shift ; "\$@" ; }  # disable chroot
+  ## Many of the scripts also use chroot directly:
+  chroot() { shift ; "$@" ; }  # disable chroot
+VERBATIM
+)
 
 # The first parameter to scripts is supposed to be the chroot
 # directory, so it must exist to pass error checking.  For the
