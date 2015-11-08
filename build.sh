@@ -374,6 +374,7 @@ EOF
 	while read ln; do
 	    [[ "$ln" == *install_td-agent* ]] && continue
 	    [[ "$ln" == *install_zabbix-agent* ]] && continue
+	    [[ "$ln" == *install_wakame-init* ]] && continue
 	    run-mita-script-remotely "$ln"
 	done
     touch "$SCRIPT_DIR/03-kccs-additions/flag-ran-xexecscript.d-scripts"
