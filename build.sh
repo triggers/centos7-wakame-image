@@ -62,7 +62,7 @@ run-mita-script-remotely()
 
     echo
     echo "Running script in VM:  $scriptpath"
-    
+
     "$SCRIPT_DIR/ssh-shortcut.sh" <<REMOTESCRIPT
 # Copied from vmbuilder/kvm/rhel/6/functions/distro.sh
 set -x
@@ -275,7 +275,7 @@ EOF
     [[ "$tryssh" = "it-worked" ]]
 ) ; prev-cmd-failed "Error while booting fresh minimal image for KCCS additions"
 
-# add user 
+# add user
 (
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-add-user" ]
     $skip_rest_if_already_done
@@ -297,9 +297,9 @@ $( cat <<'VERBATIM' # make it unnecessary to excape all the dollar signs:
   function run_in_target() {
     local chroot_dir=$1; shift; local args="$*"
     ##  [[ -d "${chroot_dir}" ]] || { echo "[ERROR] directory not found: ${chroot_dir} (${BASH_SOURCE[0]##*/}:${LINENO})" >&2; return 1; }
-  
+
     ##  chroot ${chroot_dir} bash -e -c "${args}"
-  
+
     ##  do this instead:
     bash -e -c "${args}"
   }
@@ -321,7 +321,7 @@ set -- "/"
 $(< "$SCRIPT_DIR/copied-from-mita-tools/gouc-user.sh")
 
 REMOTESCRIPT
-    
+
     touch "$SCRIPT_DIR/03-kccs-additions/flag-add-user"
 ) ; prev-cmd-failed "Error while adding user account"
 
@@ -381,7 +381,7 @@ EOF
     "$SCRIPT_DIR/ssh-shortcut.sh" rpm -Uvh http://repo.zabbix.jp/relatedpkgs/rhel6/x86_64/zabbix-jp-release-6-6.noarch.rpm    
 
     # make sure rpm thinks all was installed
-    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi zabbix  
+    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi zabbix
     "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi zabbix-agent
     "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi zabbix-jp-release
     touch "$SCRIPT_DIR/03-kccs-additions/flag-zabbix-installed"
@@ -482,7 +482,7 @@ package-steps()
 	md5sum "${targetNAME}" >"${targetNAME}".md5
 	md5sum "${targetNAME%.tar.gz}" >"${targetNAME%.tar.gz}".md5
     ) ; prev-cmd-failed "Error while booting tarring image: $targetNAME"
-    
+
     (
 	[ -f "$target".install.sh ]
 	$skip_rest_if_already_done
@@ -539,4 +539,3 @@ export UUID=centos71std
 package-steps \
     "$SCRIPT_DIR/03-kccs-additions/minimal-image.raw" \
     "$SCRIPT_DIR/99k-package-for-kccs/centos71std-01.15111.raw.tar.gz"
-
