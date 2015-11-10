@@ -104,11 +104,19 @@ generate-copy-file-script()
     pathlocal="$1"
     pathinvm="$2"
     perms="$3"
+
+    # using base64 to allow for zero length files (and maybe binary data)
+    set +x # next line produces too much trace data
+    contents="$(base64 "$pathlocal")" || {
+	# cause error in script that will be caught later
+	echo "file-not-found: ${pathlocal##*/}"
+    }
+
     cat <<SCRIPT
 mkdir -p "${pathinvm%/*}"
 
-cat >$pathinvm <<'EOF'
-$(< "$pathlocal")
+base64 -d >$pathinvm <<'EOF'
+$contents
 EOF
 
 chmod $perms $pathinvm
