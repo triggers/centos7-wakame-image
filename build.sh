@@ -304,7 +304,6 @@ REMOTESCRIPT
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-copy-step" ]
     $skip_rest_if_already_done
     set -e
-    repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
     "$SCRIPT_DIR/ssh-shortcut.sh" <<REMOTESCRIPT
 set -e
 
@@ -320,7 +319,7 @@ EOF
 chmod 644 /etc/zabbix/zabbix_agentd.conf.tmpl
 
 mkdir -p /etc/td-agent
-cat >/etc/td-agent/td-agent <<'EOF'
+cat >/etc/td-agent/td-agent.conf <<'EOF'
 $(< "$SCRIPT_DIR/copied-from-mita-tools/sento_std/td-agent.conf")
 EOF
 chmod 644 /etc/td-agent/td-agent
