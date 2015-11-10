@@ -99,6 +99,23 @@ $(< "$scriptpath")
 REMOTESCRIPT
 }
 
+generate-copy-file-script()
+{
+    pathlocal="$1"
+    pathinvm="$2"
+    perms="$3"
+    cat <<SCRIPT
+mkdir -p "${pathinvm%/*}"
+
+cat >$pathinvm <<'EOF'
+$(< "$pathlocal")
+EOF
+
+chmod $perms $pathinvm
+
+SCRIPT
+}
+
 ######################################################################
 ## Build Steps
 ######################################################################
@@ -306,27 +323,26 @@ REMOTESCRIPT
     set -e
     "$SCRIPT_DIR/ssh-shortcut.sh" <<REMOTESCRIPT
 set -e
+set -x
 
-cat >/etc/default/wakame-init <<'EOF'
-$(< "$SCRIPT_DIR/copied-from-mita-tools/sento_std/guestroot/etc/default/wakame-init")
-EOF
-chmod 644 /etc/default/wakame-init
+$(generate-copy-file-script \
+    "$SCRIPT_DIR/copied-from-mita-tools/sento_std/guestroot/etc/default/wakame-init" \
+    /etc/default/wakame-init \
+    644)
 
-mkdir -p /etc/zabbix
-cat >/etc/zabbix/zabbix_agentd.conf.tmpl <<'EOF'
-$(< "$SCRIPT_DIR/copied-from-mita-tools/sento_std/zabbix_agentd.conf.tmpl")
-EOF
-chmod 644 /etc/zabbix/zabbix_agentd.conf.tmpl
+$(generate-copy-file-script \
+    "$SCRIPT_DIR/copied-from-mita-tools/sento_std/zabbix_agentd.conf.tmpl" \
+    /etc/zabbix/zabbix_agentd.conf.tmpl \
+    644)
 
-mkdir -p /etc/td-agent
-cat >/etc/td-agent/td-agent.conf <<'EOF'
-$(< "$SCRIPT_DIR/copied-from-mita-tools/sento_std/td-agent.conf")
-EOF
-chmod 644 /etc/td-agent/td-agent
+$(generate-copy-file-script \
+    "$SCRIPT_DIR/copied-from-mita-tools/sento_std/td-agent.conf" \
+    /etc/td-agent/td-agent.conf \
+    644)
 
 REMOTESCRIPT
     touch "$SCRIPT_DIR/03-kccs-additions/flag-copy-step"
-) ; prev-cmd-failed "Error while installing wakame-init"
+) ; prev-cmd-failed "Error while doing copy files"
 
 (
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed" ]
