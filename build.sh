@@ -377,13 +377,10 @@ EOF
 
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y zabbix
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y zabbix-agent
-    # TODO: double check the next line.  An install specific to Centos 7 does not seem to be available
-    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -Uvh http://repo.zabbix.jp/relatedpkgs/rhel6/x86_64/zabbix-jp-release-6-6.noarch.rpm    
 
     # make sure rpm thinks all was installed
     "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi zabbix
     "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi zabbix-agent
-    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi zabbix-jp-release
     touch "$SCRIPT_DIR/03-kccs-additions/flag-zabbix-installed"
     touch "$SCRIPT_DIR/03-kccs-additions/flag-finished-additions"
 ) ; prev-cmd-failed "Error while installing zabbix"
