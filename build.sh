@@ -421,6 +421,22 @@ for p in bash openssl openssl098e glibc-common glibc; do
     simple-yum-install $p
 done
 
+(
+    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-postcopy-step" ]
+    $skip_rest_if_already_done
+    set -e
+    "$SCRIPT_DIR/ssh-shortcut.sh" <<REMOTESCRIPT
+       set -e
+       set -x
+       $(generate-copy-file-script \
+           "$SCRIPT_DIR/copied-from-mita-tools/sento_std/guestroot/etc/resolv.conf" \
+           /etc/resolv.conf \
+           644)
+REMOTESCRIPT
+    touch "$SCRIPT_DIR/03-kccs-additions/flag-postcopy-step"
+) ; prev-cmd-failed "Error while doing post copy files"
+
+exit
 ( # TODO: refactor this
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-shutdown" ]
     $skip_rest_if_already_done
