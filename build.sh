@@ -275,6 +275,23 @@ EOF
     [[ "$tryssh" = "it-worked" ]]
 ) ; prev-cmd-failed "Error while booting fresh minimal image for KCCS additions"
 
+addpkg="
+man
+sudo rsync git make
+vim-minimal screen
+nmap lsof strace tcpdump traceroute telnet ltrace bind-utils sysstat nc
+ntp ntpdate
+iptables
+acl"
+
+for p in $addpkg; do
+    simple-yum-install $p
+done
+
+for p in bash openssl openssl098e glibc-common glibc; do
+    simple-yum-install $p
+done
+
 # add user
 (
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-add-user" ]
@@ -384,11 +401,6 @@ EOF
     touch "$SCRIPT_DIR/03-kccs-additions/flag-finished-additions"
 ) ; prev-cmd-failed "Error while installing zabbix"
 
-# these are needed for the xexecscript.d scripts
-for p in ntp iptables-services; do
-    simple-yum-install $p
-done
-
 (
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-ran-xexecscript.d-scripts" ]
     $skip_rest_if_already_done
@@ -412,10 +424,6 @@ done
     "$SCRIPT_DIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
     touch "$SCRIPT_DIR/03-kccs-additions/flag-patch-wakame-init"
 ) ; prev-cmd-failed "Error while patching wakame-init"
-
-for p in bash openssl openssl098e glibc-common glibc; do
-    simple-yum-install $p
-done
 
 (
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-postcopy-step" ]
