@@ -292,6 +292,9 @@ for p in bash openssl openssl098e glibc-common glibc; do
     simple-yum-install $p
 done
 
+# needed for the xexecscript.d scripts
+simple-yum-install iptables-services
+
 # add user
 (
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-add-user" ]
