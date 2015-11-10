@@ -276,10 +276,10 @@ EOF
 ) ; prev-cmd-failed "Error while booting fresh minimal image for KCCS additions"
 
 addpkg="
-man
+man-db
 sudo rsync git make
 vim-minimal screen
-nmap lsof strace tcpdump traceroute telnet ltrace bind-utils sysstat nc
+nmap lsof strace tcpdump traceroute telnet ltrace bind-utils sysstat nmap-ncat
 ntp ntpdate
 iptables
 acl"
