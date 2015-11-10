@@ -402,28 +402,20 @@ done
 	while read ln; do
 	    [[ "$ln" == *install_td-agent* ]] && continue
 	    [[ "$ln" == *install_zabbix-agent* ]] && continue
-	    [[ "$ln" == *install_wakame-init* ]] && continue
 	    run-mita-script-remotely "$ln"
 	done
     touch "$SCRIPT_DIR/03-kccs-additions/flag-ran-xexecscript.d-scripts"
 ) ; prev-cmd-failed "Error while running xexecscript.d scripts"
 
 (
-    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed" ]
+    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-patch-wakame-init" ]
     $skip_rest_if_already_done
     set -e
     repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
-    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y net-tools
-    "$SCRIPT_DIR/ssh-shortcut.sh" <<REMOTESCRIPT
-chroot() { shift ; "\$@" ; }  # disable chroot
-# call the script with one parameter (/)
-set -x
-set -- "/"
-$(< "$SCRIPT_DIR/copied-from-mita-tools/install_wakame-init.sh")
-REMOTESCRIPT
+    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y net-tools  # wakame-init uses ifconfig
     "$SCRIPT_DIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
-    touch "$SCRIPT_DIR/03-kccs-additions/flag-wakame-init-installed"
-) ; prev-cmd-failed "Error while installing wakame-init"
+    touch "$SCRIPT_DIR/03-kccs-additions/flag-patch-wakame-init"
+) ; prev-cmd-failed "Error while patching wakame-init"
 
 for p in bash openssl openssl098e glibc-common glibc; do
     simple-yum-install $p
@@ -444,7 +436,6 @@ REMOTESCRIPT
     touch "$SCRIPT_DIR/03-kccs-additions/flag-postcopy-step"
 ) ; prev-cmd-failed "Error while doing post copy files"
 
-exit
 ( # TODO: refactor this
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-shutdown" ]
     $skip_rest_if_already_done
