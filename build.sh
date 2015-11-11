@@ -96,6 +96,7 @@ simple-yum-install()
 {
     package="$1"
     (
+	$starting_step "yum install -y $1"
 	[ -f "$SCRIPT_DIR/03-kccs-additions/flag-$package-installed" ]
 	$skip_rest_if_already_done
 	set -e
@@ -193,7 +194,7 @@ SCRIPT
 ) ; prev-cmd-failed "Error while downloading ISO image"
 
 (
-    $starting_step "Generating ssh key pair and kickstart file"
+    $starting_step "Generate ssh key pair and kickstart file"
     [ -f "$SCRIPT_DIR/01-minimal-image/ks-sshpair.cfg" ]
     $skip_rest_if_already_done
     set -e
@@ -214,6 +215,7 @@ EOF
 ) ; prev-cmd-failed "Error while creating custom ks file with ssh key"
 
 (
+    $starting_step "Install minimal image with kickstart"
     [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.raw" ] || \
 	    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.raw.tar.gz" ]
     $skip_rest_if_already_done
@@ -224,6 +226,7 @@ EOF
 ) ; prev-cmd-failed "Error while installing minimal image with kickstart"
 
 (
+    $starting_step "Tar minimal image"
     [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.raw.tar.gz" ]
     $skip_rest_if_already_done
     set -e
@@ -234,6 +237,7 @@ EOF
 ## Public wakame build
 
 (
+    $starting_step "Extract minimal to start public image build"
     [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.raw" ]
     $skip_rest_if_already_done
     set -e
@@ -244,6 +248,7 @@ EOF
 ) ; prev-cmd-failed "Error while extracting fresh minimal image"
 
 (
+    $starting_step "Boot VM to set up for installing public extras"
     [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed" ] ||
 	{
 	    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid" ] &&
@@ -265,6 +270,7 @@ EOF
 ) ; prev-cmd-failed "Error while booting fresh minimal image"
 
 (
+    $starting_step "Install wakame-init to public image"
     [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed" ]
     $skip_rest_if_already_done
     set -e
@@ -277,6 +283,7 @@ EOF
 ) ; prev-cmd-failed "Error while installing wakame-init"
 
 (
+    $starting_step "Shutdown VM for public image installation"
     [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown" ]
     $skip_rest_if_already_done
     set -e
@@ -296,6 +303,7 @@ EOF
 
 ## KCCS build
 (
+    $starting_step "Extract minimal for kccs image build"
     [ -f "$SCRIPT_DIR/03-kccs-additions/minimal-image.raw" ]
     $skip_rest_if_already_done
     set -e
@@ -306,6 +314,7 @@ EOF
 ) ; prev-cmd-failed "Error while extracting fresh minimal image for KCCS additions"
 
 (
+    $starting_step "Boot VM to set up for installing kccs extras"
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-finished-additions" ] ||
 	{
 	    [ -f "$SCRIPT_DIR/03-kccs-additions/kvm.pid" ] &&
@@ -348,6 +357,7 @@ simple-yum-install iptables-services
 
 # add user
 (
+    $starting_step "oops, this is also done as one of the xexec scripts. Delete in next commit!"
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-add-user" ]
     $skip_rest_if_already_done
     set -e
@@ -397,6 +407,7 @@ REMOTESCRIPT
 ) ; prev-cmd-failed "Error while adding user account"
 
 (
+    $starting_step "Copy files"
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-copy-step" ]
     $skip_rest_if_already_done
     set -e
@@ -424,6 +435,7 @@ REMOTESCRIPT
 ) ; prev-cmd-failed "Error while doing copy files"
 
 (
+    $starting_step "Install td-agent"
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-td-agent-installed" ]
     $skip_rest_if_already_done
     set -e
@@ -439,6 +451,7 @@ EOF
 # Zabbix
 # http://www.unixmen.com/how-to-install-zabbix-server-on-centos-7/
 (
+    $starting_step "Install Zabbix"
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-zabbix-installed" ]
     $skip_rest_if_already_done
     set -e
@@ -456,6 +469,7 @@ EOF
 ) ; prev-cmd-failed "Error while installing zabbix"
 
 (
+    $starting_step "Run xexecscript.d scripts from mita"
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-ran-xexecscript.d-scripts" ]
     $skip_rest_if_already_done
     set -e
@@ -470,6 +484,7 @@ EOF
 ) ; prev-cmd-failed "Error while running xexecscript.d scripts"
 
 (
+    $starting_step "Patch wakame-init (TODO, fix this upstream)"
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-patch-wakame-init" ]
     $skip_rest_if_already_done
     set -e
@@ -480,6 +495,7 @@ EOF
 ) ; prev-cmd-failed "Error while patching wakame-init"
 
 (
+    $starting_step "Copy second set of files (just resolv.conf)"
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-postcopy-step" ]
     $skip_rest_if_already_done
     set -e
@@ -495,6 +511,7 @@ REMOTESCRIPT
 ) ; prev-cmd-failed "Error while doing post copy files"
 
 (
+    $starting_step "Append items to /etc/sysconfig/network"
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-sysconfig-network" ]
     $skip_rest_if_already_done
     set -e
@@ -518,6 +535,7 @@ REMOTESCRIPT
 ) ; prev-cmd-failed "Error while appending to /etc/sysconfig/network"
 
 ( # TODO: refactor this
+    $starting_step "Shutdown VM for kccs image installation"
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-shutdown" ]
     $skip_rest_if_already_done
     set -e
@@ -545,6 +563,7 @@ package-steps()
     qcowtarget="${target%.raw.tar.gz}.qcow2.gz"
     qcowNAME="${qcowtarget##*/}"
     (
+	$starting_step "Tar *.tar.gz file"
 	[ -f "$target" ]
 	$skip_rest_if_already_done
 	set -e
@@ -553,9 +572,10 @@ package-steps()
 	tar czSvf "$target" "${targetNAME%.tar.gz}"
 	md5sum "${targetNAME}" >"${targetNAME}".md5
 	md5sum "${targetNAME%.tar.gz}" >"${targetNAME%.tar.gz}".md5
-    ) ; prev-cmd-failed "Error while booting tarring image: $targetNAME"
+    ) ; prev-cmd-failed "Error while packaging raw.tar.gz file"
 
     (
+	$starting_step "Create install script for *.raw.tar.gz file"
 	[ -f "$target".install.sh ]
 	$skip_rest_if_already_done
 	set -e
@@ -564,6 +584,7 @@ package-steps()
     ) ; prev-cmd-failed "Error while creating install script for raw image: $targetNAME"
 
     (
+	$starting_step "Convert image to qcow2 format"
 	[ -f "${qcowtarget%.gz}" ] || [ -f "$qcowtarget" ]
 	$skip_rest_if_already_done
 	set -e
@@ -585,6 +606,7 @@ package-steps()
     ) ; prev-cmd-failed "Error converting image to qcow2 format: $targetNAME"
 
     (
+	$starting_step "Gzip qcow2 image"
 	[ -f "$qcowtarget" ]
 	$skip_rest_if_already_done
 	set -e
@@ -594,6 +616,7 @@ package-steps()
     ) ; prev-cmd-failed "Error while running gzip on the qcow2 image: $qcowtarget"
 
     (
+	$starting_step "Create install script for *.qcow.gz file"
 	[ -f "$qcowtarget".install.sh ]
 	$skip_rest_if_already_done
 	set -e
