@@ -46,17 +46,28 @@ export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || report
 ##  failures.
 
 : ${starting_step:=default-header}
-: ${skip_rest_if_already_done:=eval ((\$?))||exit 0} # exit (sub)process if return code is 0
+: ${skip_rest_if_already_done:=default-skip-step} # exit (sub)process if return code is 0
 export starting_step
 export skip_rest_if_already_done
 
 default-header()
 {
-    echo
-    echo "** STARTING STEP: $*"
-    echo
+    step_title="$*"
 }
 export -f default-header
+
+default-skip-step()
+{
+    if (($? == 0)); then
+	echo "** Skipping step: $step_title"
+	step_title=""
+	exit 0
+    else
+	echo ; echo "** DOING STEP: $step_title"
+	step_title=""
+    fi
+}
+export -f default-skip-step
 
 CENTOSISO="CentOS-7-x86_64-Minimal-1503-01.iso"
 ISOMD5="d07ab3e615c66a8b2e9a50f4852e6a77"
