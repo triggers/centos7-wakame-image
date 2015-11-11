@@ -17,8 +17,46 @@ prev-cmd-failed()
 
 export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfailed
 
+## Hints to understand the scripts in this file:
+## (1) Every step is put in its own process.  The easiest way to do this
+##     is to use ( ), but calling other scripts is also possible for
+##     code reuse or readability reasons.  (In addition, it is necessary
+##     to make sure the script terminates if any of the processes exit with
+##     an error.  This is easy, but does take a little care in bash. See
+##     the comments in prev-cmd-failed.)
+## (2) All steps start with commands that check whether the step has
+##     already been done.  These commands should only check.  They should
+##     not change any state.
+## (3) The return code of the last "check" command is used to decide whether
+##     the rest of the step (i.e. the step's process) needs to be done.
+##     This should be done by inserting "$skip_rest_if_already_done" at
+##     that point in the step.  The default action of $skip_rest_if_already_done
+##     is to exit the process if the return code is 0, but because it is
+##     a simple bash variable, it can be assigned other (code) values for fancy
+##     debugging or status options in the future.
+## (4) An optional '$starting_step "Description of the step"' can optionally appear
+##     at the start of the step.  By default, it outputs a section header in the
+##     build log, but it to allows for future extensibility for fancy debugging
+##     or more control over the build process.
 
+##  Therefore, with minimal effort, it should be possible to take a
+##  the simplest easy-to-read sequential script and make it (at least
+##  somewhat) idempotent.  In other words, it should be possible to
+##  run the script multiple times, and have it gracefully recover from
+##  failures.
+
+: ${starting_step:=default-header}
 : ${skip_rest_if_already_done:=eval ((\$?))||exit 0} # exit (sub)process if return code is 0
+export starting_step
+export skip_rest_if_already_done
+
+default-header()
+{
+    echo
+    echo "** STARTING STEP: $*"
+    echo
+}
+export -f default-header
 
 CENTOSISO="CentOS-7-x86_64-Minimal-1503-01.iso"
 ISOMD5="d07ab3e615c66a8b2e9a50f4852e6a77"
@@ -129,6 +167,7 @@ SCRIPT
 ######################################################################
 
 (
+    $starting_step "Download CentOS ISO install image"
     [ -f "$SCRIPT_DIR/01-minimal-image/$CENTOSISO" ] &&
 	[[ "$(< "$SCRIPT_DIR/01-minimal-image/$CENTOSISO.md5")" = *$ISOMD5* ]]
     $skip_rest_if_already_done
@@ -143,6 +182,7 @@ SCRIPT
 ) ; prev-cmd-failed "Error while downloading ISO image"
 
 (
+    $starting_step "Generating ssh key pair and kickstart file"
     [ -f "$SCRIPT_DIR/01-minimal-image/ks-sshpair.cfg" ]
     $skip_rest_if_already_done
     set -e
