@@ -355,57 +355,6 @@ done
 # needed for the xexecscript.d scripts
 simple-yum-install iptables-services
 
-# add user
-(
-    $starting_step "oops, this is also done as one of the xexec scripts. Delete in next commit!"
-    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-add-user" ]
-    $skip_rest_if_already_done
-    set -e
-    set -x
-    "$SCRIPT_DIR/ssh-shortcut.sh" <<REMOTESCRIPT
-# Copied from vmbuilder/kvm/rhel/6/functions/distro.sh
-set -x
-date
-$(< "$SCRIPT_DIR/copied-from-vmbuilder/distro.sh")
-
-## The above scripts require run_in_target() which is defined
-## in vmapp/tmp/vmbuilder/kvm/rhel/6/functions/utils.sh and
-## uses chroot.  We are executing directly on the OS, so
-## include a pass-through version of run_in_target():
-
-$( cat <<'VERBATIM' # make it unnecessary to excape all the dollar signs:
-
-  function run_in_target() {
-    local chroot_dir=$1; shift; local args="$*"
-    ##  [[ -d "${chroot_dir}" ]] || { echo "[ERROR] directory not found: ${chroot_dir} (${BASH_SOURCE[0]##*/}:${LINENO})" >&2; return 1; }
-
-    ##  chroot ${chroot_dir} bash -e -c "${args}"
-
-    ##  do this instead:
-    bash -e -c "${args}"
-  }
-  export -f run_in_target
-
-VERBATIM
-)
-
-# The first parameter to gouc-user.sh needs is supposed
-# to be the chroot, so it must exist to pass error checking.
-# For the run_in_target calls, it is ignored.  For
-# the non-run_in_target calls, it has to be "/" so
-# when it gets prepended to paths, it comes out as "//",
-# which is equivalent to "/".
-
-# call gouc-user.sh with one parameter (/)
-set -x
-set -- "/"
-$(< "$SCRIPT_DIR/copied-from-mita-tools/gouc-user.sh")
-
-REMOTESCRIPT
-
-    touch "$SCRIPT_DIR/03-kccs-additions/flag-add-user"
-) ; prev-cmd-failed "Error while adding user account"
-
 (
     $starting_step "Copy files"
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-copy-step" ]
