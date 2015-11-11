@@ -422,7 +422,6 @@ EOF
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-ran-xexecscript.d-scripts" ]
     $skip_rest_if_already_done
     set -e
-    repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
     find "$SCRIPT_DIR/copied-from-mita-tools/xexecscript.d/" -name '*.sh' | \
 	while read ln; do
 	    [[ "$ln" == *install_td-agent* ]] && continue
@@ -437,7 +436,6 @@ EOF
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-patch-wakame-init" ]
     $skip_rest_if_already_done
     set -e
-    repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
     "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y net-tools  # wakame-init uses ifconfig
     "$SCRIPT_DIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
     touch "$SCRIPT_DIR/03-kccs-additions/flag-patch-wakame-init"
