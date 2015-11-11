@@ -583,7 +583,7 @@ package-steps()
     ) ; prev-cmd-failed "Error while running gzip on the qcow2 image: $qcowtarget"
 
     (
-	[ -f "$qcowtarget".gz.install.sh ]
+	[ -f "$qcowtarget".install.sh ]
 	$skip_rest_if_already_done
 	set -e
 	cd "$targetDIR"
