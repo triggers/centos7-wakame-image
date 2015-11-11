@@ -443,6 +443,29 @@ REMOTESCRIPT
     touch "$SCRIPT_DIR/03-kccs-additions/flag-postcopy-step"
 ) ; prev-cmd-failed "Error while doing post copy files"
 
+(
+    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-sysconfig-network" ]
+    $skip_rest_if_already_done
+    set -e
+    "$SCRIPT_DIR/ssh-shortcut.sh" <<REMOTESCRIPT
+       set -e
+       set -x
+       grep HOSTNAME /etc/sysconfig/network && {
+            echo "Not expecting HOSTNAME to already be in /etc/sysconfig/network for centos7" 1>&2
+            exit 255
+       }
+       # TODO: are these needed for CentOS7 at all??
+       # Note: the wakame-init script expects HOSTNAME to appear so it can change it with sed
+       cat >>/etc/sysconfig/network <<'EOF'
+NETWORKING=yes
+HOSTNAME=localhost
+NETWORKING_IPV6=no
+IPV6INIT=no
+EOF
+REMOTESCRIPT
+    touch "$SCRIPT_DIR/03-kccs-additions/flag-sysconfig-network"
+) ; prev-cmd-failed "Error while appending to /etc/sysconfig/network"
+
 ( # TODO: refactor this
     [ -f "$SCRIPT_DIR/03-kccs-additions/flag-shutdown" ]
     $skip_rest_if_already_done
