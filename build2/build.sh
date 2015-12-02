@@ -295,7 +295,7 @@ export DATADIR="$CODEDIR/output-pub"
     done
     [[ "$tryssh" = "it-worked" ]]
 ) ; prev-cmd-failed "Error while booting fresh minimal image"
-exit
+
 (
     $starting_step "Install wakame-init to public image"
     [ -f "$DATADIR/flag-wakame-init-installed" ]
@@ -326,7 +326,7 @@ exit
     kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null && exit 1
     touch "$DATADIR/flag-shutdown"
 ) ; prev-cmd-failed "Error while shutting down VM"
-
+exit
 
 ## KCCS build
 
