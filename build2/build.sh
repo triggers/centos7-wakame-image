@@ -211,20 +211,21 @@ SCRIPT
 
 (
     $starting_step "Generate ssh key pair and kickstart file"
-    [ -f "$SCRIPT_DIR/01-minimal-image/ks-sshpair.cfg" ]
+    [ -f "$DATADIR/ks-sshpair.cfg" ]
     $skip_rest_if_already_done
     set -e
-    cd "$SCRIPT_DIR/01-minimal-image/"
-    [ -f tmp-sshkeypair ] || ssh-keygen -f tmp-sshkeypair -N ""
-    cat >ks-sshpair.cfg <<EOF
-$(< anaconda-ks.cfg)
+    [ -f "$DATADIR/tmp-sshkeypair" ] || ssh-keygen -f "$DATADIR/tmp-sshkeypair" -N ""
+    ks_text="$(cat "$CODEDIR/anaconda-ks.cfg")"
+    sshkey_text="$(cat "$DATADIR/tmp-sshkeypair.pub")"
+    cat >"$DATADIR/ks-sshpair.cfg" <<EOF
+$ks_text
 
 %post
 ls -l /root/  >/tmp.listing
 mkdir /root/.ssh
 chmod 700 /root/.ssh
 cat >/root/.ssh/authorized_keys <<EOS
-$(< tmp-sshkeypair.pub)
+$sshkey_text
 EOS
 %end
 EOF
