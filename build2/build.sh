@@ -43,18 +43,18 @@ prev-cmd-failed()
 ##  run the script multiple times, and have it gracefully recover from
 ##  failures.
 
-: ${starting_step:=default-header}
-: ${skip_rest_if_already_done:=default-skip-step} # exit (sub)process if return code is 0
+: ${starting_step:=default_header}
+: ${skip_rest_if_already_done:=default_skip_step} # exit (sub)process if return code is 0
 export starting_step
 export skip_rest_if_already_done
 
-default-header()
+default_header()
 {
     step_title="$*"
 }
-export -f default-header
+export -f default_header
 
-default-skip-step()
+default_skip_step()
 {
     if (($? == 0)); then
 	echo "** Skipping step: $step_title"
@@ -65,7 +65,7 @@ default-skip-step()
 	step_title=""
     fi
 }
-export -f default-skip-step
+export -f default_skip_step
 
 CENTOSISO="CentOS-7-x86_64-Minimal-1503-01.iso"
 ISOMD5="d07ab3e615c66a8b2e9a50f4852e6a77"
@@ -233,21 +233,22 @@ EOF
 
 (
     $starting_step "Install minimal image with kickstart"
-    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.raw" ] || \
-	    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.raw.tar.gz" ]
+    [ -f "$DATADIR/minimal-image.raw" ] || \
+	    [ -f "$DATADIR/minimal-image.raw.tar.gz" ]
     $skip_rest_if_already_done
     set -e
-    cd "$SCRIPT_DIR/01-minimal-image/"
-    time ./centos-kickstart-build.sh "$CENTOSISO" ks-sshpair.cfg tmp.raw 1024M
-    cp -al tmp.raw minimal-image.raw
+    cd "$DATADIR"  # centos-kickstart-build.sh expects to work in current directory
+    time "$CODEDIR/centos-kickstart-build.sh" \
+	 "$CENTOSISO" "ks-sshpair.cfg" "tmp.raw" 1024M
+    cp -al "tmp.raw" "minimal-image.raw"
 ) ; prev-cmd-failed "Error while installing minimal image with kickstart"
 
 (
     $starting_step "Tar minimal image"
-    [ -f "$SCRIPT_DIR/01-minimal-image/minimal-image.raw.tar.gz" ]
+    [ -f "$DATADIR/minimal-image.raw.tar.gz" ]
     $skip_rest_if_already_done
     set -e
-    cd "$SCRIPT_DIR/01-minimal-image/"
+    cd "$DATADIR/"
     time tar czSvf minimal-image.raw.tar.gz minimal-image.raw
 ) ; prev-cmd-failed "Error while tarring minimal image"
 
