@@ -6,12 +6,12 @@ reportfailed()
     exit 255
 }
 
-prev-cmd-failed()
+prev_cmd_failed()
 {
     # this is needed because '( cmd1 ; cmd2 ; set -e ; cmd3 ; cmd4 ) || reportfailed'
     # does not work because the || disables set -e, even inside the subshell!
     # see http://unix.stackexchange.com/questions/65532/why-does-set-e-not-work-inside
-    # A workaround is to do  '( cmd1 ; cmd2 ; set -e ; cmd3 ; cmd4 ) ; prev-cmd-failed'
+    # A workaround is to do  '( cmd1 ; cmd2 ; set -e ; cmd3 ; cmd4 ) ; prev_cmd_failed'
     (($? == 0)) || reportfailed "$*"
 }
 
@@ -21,7 +21,7 @@ prev-cmd-failed()
 ##     code reuse or readability reasons.  (In addition, it is necessary
 ##     to make sure the script terminates if any of the processes exit with
 ##     an error.  This is easy, but does take a little care in bash. See
-##     the comments in prev-cmd-failed.)
+##     the comments in prev_cmd_failed.)
 ## (2) All steps start with commands that check whether the step has
 ##     already been done.  These commands should only check.  They should
 ##     not change any state.
@@ -112,7 +112,7 @@ simple-yum-install()
 	"$CODEDIR/bin/ssh-shortcut.sh" yum install -y $package
 	"$CODEDIR/bin/ssh-shortcut.sh" rpm -qi $package  # make sure rpm thinks it installed
 	touch "$CODEDIR/03-kccs-additions/flag-$package-installed"
-    ) ; prev-cmd-failed "Error while installing $package"
+    ) ; prev_cmd_failed "Error while installing $package"
 }
 
 run-mita-script-remotely()
@@ -192,7 +192,7 @@ SCRIPT
     [  -d "$DATADIR" ]
     $skip_rest_if_already_done
     mkdir "$DATADIR"
-) ; prev-cmd-failed
+) ; prev_cmd_failed
 
 (
     $starting_step "Download CentOS ISO install image"
@@ -207,7 +207,7 @@ SCRIPT
 	curl --fail "$CENTOSMIRROR/$CENTOSISO" -o "$DATADIR/$CENTOSISO"
     fi
     md5sum "$DATADIR/$CENTOSISO" >"$DATADIR/$CENTOSISO.md5"
-) ; prev-cmd-failed "Error while downloading ISO image"
+) ; prev_cmd_failed "Error while downloading ISO image"
 
 (
     $starting_step "Generate ssh key pair and kickstart file"
@@ -229,7 +229,7 @@ $sshkey_text
 EOS
 %end
 EOF
-) ; prev-cmd-failed "Error while creating custom ks file with ssh key"
+) ; prev_cmd_failed "Error while creating custom ks file with ssh key"
 
 (
     $starting_step "Install minimal image with kickstart"
@@ -241,7 +241,7 @@ EOF
     time "$CODEDIR/bin/centos-kickstart-build.sh" \
 	 "$CENTOSISO" "ks-sshpair.cfg" "tmp.raw" 1024M
     cp -al "tmp.raw" "minimal-image.raw"
-) ; prev-cmd-failed "Error while installing minimal image with kickstart"
+) ; prev_cmd_failed "Error while installing minimal image with kickstart"
 
 (
     $starting_step "Tar minimal image"
@@ -250,7 +250,7 @@ EOF
     set -e
     cd "$DATADIR/"
     time tar czSvf minimal-image.raw.tar.gz minimal-image.raw
-) ; prev-cmd-failed "Error while tarring minimal image"
+) ; prev_cmd_failed "Error while tarring minimal image"
 
 ## Public wakame build
 
@@ -261,7 +261,7 @@ export DATADIR="$CODEDIR/output-pub"
     $skip_rest_if_already_done
     mkdir "$DATADIR"
     ln -s ../output/ "$DATADIR/basic-image-dir"
-) ; prev-cmd-failed
+) ; prev_cmd_failed
 
 (
     $starting_step "Extract minimal to start public image build"
@@ -272,7 +272,7 @@ export DATADIR="$CODEDIR/output-pub"
     cp "./basic-image-dir/runscript.sh" .
     tar xzvf "./basic-image-dir/minimal-image.raw.tar.gz"
     sed -i 's/tmp.raw/minimal-image.raw/' "./runscript.sh"
-) ; prev-cmd-failed "Error while extracting fresh minimal image"
+) ; prev_cmd_failed "Error while extracting fresh minimal image"
 
 (
     $starting_step "Boot VM to set up for installing public extras"
@@ -294,7 +294,7 @@ export DATADIR="$CODEDIR/output-pub"
 	sleep 10
     done
     [[ "$tryssh" = "it-worked" ]]
-) ; prev-cmd-failed "Error while booting fresh minimal image"
+) ; prev_cmd_failed "Error while booting fresh minimal image"
 
 (
     $starting_step "Install wakame-init to public image"
@@ -307,7 +307,7 @@ export DATADIR="$CODEDIR/output-pub"
     "$CODEDIR/bin/ssh-shortcut.sh" yum install -y wakame-init
     "$CODEDIR/bin/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
     touch "$DATADIR/flag-wakame-init-installed"
-) ; prev-cmd-failed "Error while installing wakame-init"
+) ; prev_cmd_failed "Error while installing wakame-init"
 
 (
     $starting_step "Shutdown VM for public image installation"
@@ -325,7 +325,7 @@ export DATADIR="$CODEDIR/output-pub"
     done
     kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null && exit 1
     touch "$DATADIR/flag-shutdown"
-) ; prev-cmd-failed "Error while shutting down VM"
+) ; prev_cmd_failed "Error while shutting down VM"
 
 
 ## KCCS build
@@ -350,7 +350,7 @@ package-steps()
 	tar czSvf "$target" "${targetNAME%.tar.gz}"
 	md5sum "${targetNAME}" >"${targetNAME}".md5
 	md5sum "${targetNAME%.tar.gz}" >"${targetNAME%.tar.gz}".md5
-    ) ; prev-cmd-failed "Error while packaging raw.tar.gz file"
+    ) ; prev_cmd_failed "Error while packaging raw.tar.gz file"
 
     (
 	$starting_step "Create install script for *.raw.tar.gz file"
@@ -359,7 +359,7 @@ package-steps()
 	set -e
 	cd "$targetDIR"
 	"$CODEDIR/bin/output-image-install-script.sh" "$targetNAME"
-    ) ; prev-cmd-failed "Error while creating install script for raw image: $targetNAME"
+    ) ; prev_cmd_failed "Error while creating install script for raw image: $targetNAME"
 
     (
 	$starting_step "Convert image to qcow2 format"
@@ -381,7 +381,7 @@ package-steps()
 	    qemu-img convert -f raw -O qcow2 "${target%.tar.gz}" "${qcowtarget%.gz}"
 	md5sum "${qcowtarget%.gz}" >"${qcowtarget%.gz}".md5
 	ls -l "${qcowtarget%.gz}" >"${qcowtarget%.gz}".lsl
-    ) ; prev-cmd-failed "Error converting image to qcow2 format: $targetNAME"
+    ) ; prev_cmd_failed "Error converting image to qcow2 format: $targetNAME"
 
     (
 	$starting_step "Gzip qcow2 image"
@@ -391,7 +391,7 @@ package-steps()
 	cd "$targetDIR"
 	gzip "${qcowtarget%.gz}"
 	md5sum "$qcowtarget" >"$qcowtarget".md5
-    ) ; prev-cmd-failed "Error while running gzip on the qcow2 image: $qcowtarget"
+    ) ; prev_cmd_failed "Error while running gzip on the qcow2 image: $qcowtarget"
 
     (
 	$starting_step "Create install script for *.qcow.gz file"
@@ -400,7 +400,7 @@ package-steps()
 	set -e
 	cd "$targetDIR"
 	"$CODEDIR/bin/output-qcow-image-install-script.sh" "$qcowNAME"
-    ) ; prev-cmd-failed "Error while creating install script for qcow image: $qcowtarget"
+    ) ; prev_cmd_failed "Error while creating install script for qcow image: $qcowtarget"
 }
 
 export UUID=centos7
