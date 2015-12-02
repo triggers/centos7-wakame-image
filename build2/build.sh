@@ -106,12 +106,12 @@ simple-yum-install()
     package="$1"
     (
 	$starting_step "yum install -y $1"
-	[ -f "$SCRIPT_DIR/03-kccs-additions/flag-$package-installed" ]
+	[ -f "$CODEDIR/03-kccs-additions/flag-$package-installed" ]
 	$skip_rest_if_already_done
 	set -e
-	"$SCRIPT_DIR/ssh-shortcut.sh" yum install -y $package
-	"$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi $package  # make sure rpm thinks it installed
-	touch "$SCRIPT_DIR/03-kccs-additions/flag-$package-installed"
+	"$CODEDIR/ssh-shortcut.sh" yum install -y $package
+	"$CODEDIR/ssh-shortcut.sh" rpm -qi $package  # make sure rpm thinks it installed
+	touch "$CODEDIR/03-kccs-additions/flag-$package-installed"
     ) ; prev-cmd-failed "Error while installing $package"
 }
 
@@ -122,11 +122,11 @@ run-mita-script-remotely()
     echo
     echo "Running script in VM:  $scriptpath"
 
-    "$SCRIPT_DIR/ssh-shortcut.sh" <<REMOTESCRIPT
+    "$CODEDIR/ssh-shortcut.sh" <<REMOTESCRIPT
 # Copied from vmbuilder/kvm/rhel/6/functions/distro.sh
 set -x
 date
-$(< "$SCRIPT_DIR/copied-from-vmbuilder/distro.sh")
+$(< "$CODEDIR/copied-from-vmbuilder/distro.sh")
 
 ## The above scripts require run_in_target() which is defined
 ## in vmapp/tmp/vmbuilder/kvm/rhel/6/functions/utils.sh and
@@ -254,68 +254,77 @@ EOF
 
 ## Public wakame build
 
+export DATADIR="$CODEDIR/output-pub"
+(
+    $starting_step "Setup output-pub directory"
+    [  -d "$DATADIR" ]
+    $skip_rest_if_already_done
+    mkdir "$DATADIR"
+    ln -s ../output/ "$DATADIR/basic-image-dir"
+) ; prev-cmd-failed
+
 (
     $starting_step "Extract minimal to start public image build"
-    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.raw" ]
+    [ -f "$DATADIR/minimal-image.raw" ]
     $skip_rest_if_already_done
     set -e
-    cd "$SCRIPT_DIR/02-image-plus-wakame-init/"
-    cp "$SCRIPT_DIR/01-minimal-image/runscript.sh" .
-    tar xzvf "$SCRIPT_DIR/01-minimal-image/minimal-image.raw.tar.gz"
-    sed -i 's/tmp.raw/minimal-image.raw/' runscript.sh
+    cd "$DATADIR"
+    cp "./basic-image-dir/runscript.sh" .
+    tar xzvf "./basic-image-dir/minimal-image.raw.tar.gz"
+    sed -i 's/tmp.raw/minimal-image.raw/' "./runscript.sh"
 ) ; prev-cmd-failed "Error while extracting fresh minimal image"
 
 (
     $starting_step "Boot VM to set up for installing public extras"
-    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed" ] ||
+    [ -f "$DATADIR/flag-wakame-init-installed" ] ||
 	{
-	    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid" ] &&
-		kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid") 2>/dev/null
+	    [ -f "$DATADIR/kvm.pid" ] &&
+		kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null
 	}
     $skip_rest_if_already_done
     set -e
-    cd "$SCRIPT_DIR/02-image-plus-wakame-init/"
+    cd "$DATADIR/"
     ./runscript.sh >kvm.stdout 2>kvm.stderr &
     sleep 10
-    kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid")
+    kill -0 $(< "$DATADIR/kvm.pid")
     for (( i=1 ; i<20 ; i++ )); do
-	tryssh="$("$SCRIPT_DIR/ssh-shortcut.sh" echo it-worked)" || :
+	tryssh="$("$CODEDIR/ssh-shortcut.sh" echo it-worked)" || :
 	[ "$tryssh" = "it-worked" ] && break
 	echo "$i/20 - Waiting 10 more seconds for ssh to connect..."
 	sleep 10
     done
     [[ "$tryssh" = "it-worked" ]]
 ) ; prev-cmd-failed "Error while booting fresh minimal image"
-
+exit
 (
     $starting_step "Install wakame-init to public image"
-    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed" ]
+    [ -f "$DATADIR/flag-wakame-init-installed" ]
     $skip_rest_if_already_done
     set -e
     repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
-    "$SCRIPT_DIR/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
-    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y net-tools
-    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y wakame-init
-    "$SCRIPT_DIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
-    touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed"
+    "$CODEDIR/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
+    "$CODEDIR/ssh-shortcut.sh" yum install -y net-tools
+    "$CODEDIR/ssh-shortcut.sh" yum install -y wakame-init
+    "$CODEDIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
+    touch "$DATADIR/flag-wakame-init-installed"
 ) ; prev-cmd-failed "Error while installing wakame-init"
 
 (
     $starting_step "Shutdown VM for public image installation"
-    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown" ]
+    [ -f "$DATADIR/flag-shutdown" ]
     $skip_rest_if_already_done
     set -e
-    kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid") 2>/dev/null || \
+    kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null || \
 	reportfailed "Expecting KVM process to be running now"
     # the next ssh always returns error, so mask it from set -e
-    "$SCRIPT_DIR/ssh-shortcut.sh" shutdown -P now || true
+    "$CODEDIR/ssh-shortcut.sh" shutdown -P now || true
     for (( i=1 ; i<20 ; i++ )); do
-	kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid") 2>/dev/null || break
+	kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null || break
 	echo "$i/20 - Waiting 2 more seconds for KVM to exit..."
 	sleep 2
     done
-    kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid") 2>/dev/null && exit 1
-    touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown"
+    kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null && exit 1
+    touch "$DATADIR/flag-shutdown"
 ) ; prev-cmd-failed "Error while shutting down VM"
 
 
@@ -395,5 +404,5 @@ package-steps()
 
 export UUID=centos7
 package-steps \
-    "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.raw" \
-    "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz"
+    "$DATADIR/minimal-image.raw" \
+    "$CODEDIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz"
