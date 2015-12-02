@@ -15,8 +15,6 @@ prev-cmd-failed()
     (($? == 0)) || reportfailed "$*"
 }
 
-export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfailed
-
 ## Hints to understand the scripts in this file:
 ## (1) Every step is put in its own process.  The easiest way to do this
 ##     is to use ( ), but calling other scripts is also possible for
@@ -72,6 +70,17 @@ export -f default-skip-step
 CENTOSISO="CentOS-7-x86_64-Minimal-1503-01.iso"
 ISOMD5="d07ab3e615c66a8b2e9a50f4852e6a77"
 CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
+
+######################################################################
+## Directory Paths
+######################################################################
+
+export CODEDIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfailed
+export DATADIR="$CODEDIR/output"
+
+# put the current directory someplace unwritable to force use
+# of the above variables
+cd -P /proc/self
 
 ######################################################################
 ## Functions
@@ -179,18 +188,25 @@ SCRIPT
 ######################################################################
 
 (
+    $starting_step "Create output directory"
+    [  -d "$DATADIR" ]
+    $skip_rest_if_already_done
+    mkdir "$DATADIR"
+) ; prev-cmd-failed
+
+(
     $starting_step "Download CentOS ISO install image"
-    [ -f "$SCRIPT_DIR/01-minimal-image/$CENTOSISO" ] &&
-	[[ "$(< "$SCRIPT_DIR/01-minimal-image/$CENTOSISO.md5")" = *$ISOMD5* ]]
+    [ -f "$DATADIR/$CENTOSISO" ] &&
+	[[ "$(< "$DATADIR/$CENTOSISO.md5")" = *$ISOMD5* ]]
     $skip_rest_if_already_done
     set -e
-    if [ -f "$CENTOSISO" ]; then
+    if [ -f "$CODEDIR/$CENTOSISO" ]; then
 	# to avoid the download while debugging
-	cp -al "$CENTOSISO" "$SCRIPT_DIR/01-minimal-image/$CENTOSISO"
+	cp -al "$CODEDIR/$CENTOSISO" "$DATADIR/$CENTOSISO"
     else
-	curl --fail "$CENTOSMIRROR/$CENTOSISO" -o "$SCRIPT_DIR/01-minimal-image/$CENTOSISO"
+	curl --fail "$CENTOSMIRROR/$CENTOSISO" -o "$DATADIR/$CENTOSISO"
     fi
-    md5sum "$SCRIPT_DIR/01-minimal-image/$CENTOSISO" >"$SCRIPT_DIR/01-minimal-image/$CENTOSISO.md5"
+    md5sum "$DATADIR/$CENTOSISO" >"$DATADIR/$CENTOSISO.md5"
 ) ; prev-cmd-failed "Error while downloading ISO image"
 
 (
