@@ -109,8 +109,8 @@ simple-yum-install()
 	[ -f "$CODEDIR/03-kccs-additions/flag-$package-installed" ]
 	$skip_rest_if_already_done
 	set -e
-	"$CODEDIR/ssh-shortcut.sh" yum install -y $package
-	"$CODEDIR/ssh-shortcut.sh" rpm -qi $package  # make sure rpm thinks it installed
+	"$CODEDIR/bin/ssh-shortcut.sh" yum install -y $package
+	"$CODEDIR/bin/ssh-shortcut.sh" rpm -qi $package  # make sure rpm thinks it installed
 	touch "$CODEDIR/03-kccs-additions/flag-$package-installed"
     ) ; prev-cmd-failed "Error while installing $package"
 }
@@ -122,7 +122,7 @@ run-mita-script-remotely()
     echo
     echo "Running script in VM:  $scriptpath"
 
-    "$CODEDIR/ssh-shortcut.sh" <<REMOTESCRIPT
+    "$CODEDIR/bin/ssh-shortcut.sh" <<REMOTESCRIPT
 # Copied from vmbuilder/kvm/rhel/6/functions/distro.sh
 set -x
 date
@@ -237,8 +237,8 @@ EOF
 	    [ -f "$DATADIR/minimal-image.raw.tar.gz" ]
     $skip_rest_if_already_done
     set -e
-    cd "$DATADIR"  # centos-kickstart-build.sh expects to work in current directory
-    time "$CODEDIR/centos-kickstart-build.sh" \
+    cd "$DATADIR"  # centos-kickstart-build.sh creates files in the current $(pwd)
+    time "$CODEDIR/bin/centos-kickstart-build.sh" \
 	 "$CENTOSISO" "ks-sshpair.cfg" "tmp.raw" 1024M
     cp -al "tmp.raw" "minimal-image.raw"
 ) ; prev-cmd-failed "Error while installing minimal image with kickstart"
@@ -288,7 +288,7 @@ export DATADIR="$CODEDIR/output-pub"
     sleep 10
     kill -0 $(< "$DATADIR/kvm.pid")
     for (( i=1 ; i<20 ; i++ )); do
-	tryssh="$("$CODEDIR/ssh-shortcut.sh" echo it-worked)" || :
+	tryssh="$("$CODEDIR/bin/ssh-shortcut.sh" echo it-worked)" || :
 	[ "$tryssh" = "it-worked" ] && break
 	echo "$i/20 - Waiting 10 more seconds for ssh to connect..."
 	sleep 10
@@ -302,10 +302,10 @@ export DATADIR="$CODEDIR/output-pub"
     $skip_rest_if_already_done
     set -e
     repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
-    "$CODEDIR/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
-    "$CODEDIR/ssh-shortcut.sh" yum install -y net-tools
-    "$CODEDIR/ssh-shortcut.sh" yum install -y wakame-init
-    "$CODEDIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
+    "$CODEDIR/bin/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
+    "$CODEDIR/bin/ssh-shortcut.sh" yum install -y net-tools
+    "$CODEDIR/bin/ssh-shortcut.sh" yum install -y wakame-init
+    "$CODEDIR/bin/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
     touch "$DATADIR/flag-wakame-init-installed"
 ) ; prev-cmd-failed "Error while installing wakame-init"
 
@@ -317,7 +317,7 @@ export DATADIR="$CODEDIR/output-pub"
     kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null || \
 	reportfailed "Expecting KVM process to be running now"
     # the next ssh always returns error, so mask it from set -e
-    "$CODEDIR/ssh-shortcut.sh" shutdown -P now || true
+    "$CODEDIR/bin/ssh-shortcut.sh" shutdown -P now || true
     for (( i=1 ; i<20 ; i++ )); do
 	kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null || break
 	echo "$i/20 - Waiting 2 more seconds for KVM to exit..."
@@ -358,7 +358,7 @@ package-steps()
 	$skip_rest_if_already_done
 	set -e
 	cd "$targetDIR"
-	../output-image-install-script.sh "$targetNAME"
+	"$CODEDIR/bin/output-image-install-script.sh" "$targetNAME"
     ) ; prev-cmd-failed "Error while creating install script for raw image: $targetNAME"
 
     (
@@ -399,7 +399,7 @@ package-steps()
 	$skip_rest_if_already_done
 	set -e
 	cd "$targetDIR"
-	"$CODEDIR/output-qcow-image-install-script.sh" "$qcowNAME"
+	"$CODEDIR/bin/output-qcow-image-install-script.sh" "$qcowNAME"
     ) ; prev-cmd-failed "Error while creating install script for qcow image: $qcowtarget"
 }
 
