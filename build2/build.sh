@@ -326,7 +326,7 @@ export DATADIR="$CODEDIR/output-pub"
     kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null && exit 1
     touch "$DATADIR/flag-shutdown"
 ) ; prev-cmd-failed "Error while shutting down VM"
-exit
+
 
 ## KCCS build
 
@@ -344,6 +344,7 @@ package-steps()
 	[ -f "$target" ]
 	$skip_rest_if_already_done
 	set -e
+	cd "$DATADIR/"
 	cp -al "$source" "${target%.tar.gz}"
 	cd "$targetDIR"
 	tar czSvf "$target" "${targetNAME%.tar.gz}"
@@ -398,11 +399,11 @@ package-steps()
 	$skip_rest_if_already_done
 	set -e
 	cd "$targetDIR"
-	../output-qcow-image-install-script.sh "$qcowNAME"
+	"$CODEDIR/output-qcow-image-install-script.sh" "$qcowNAME"
     ) ; prev-cmd-failed "Error while creating install script for qcow image: $qcowtarget"
 }
 
 export UUID=centos7
 package-steps \
     "$DATADIR/minimal-image.raw" \
-    "$CODEDIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz"
+    "$DATADIR/centos-7.x86_64.kvm.md.raw.tar.gz"
