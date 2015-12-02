@@ -6,8 +6,6 @@ reportfailed()
     exit 255
 }
 
-[ -n "$DATADIR" ] || reportfailed "Expecting $DATADIR to be set"
-
 prev_cmd_failed()
 {
     # this is needed because '( cmd1 ; cmd2 ; set -e ; cmd3 ; cmd4 ) || reportfailed'
@@ -188,60 +186,171 @@ SCRIPT
 ## Build Steps
 ######################################################################
 
+export DATADIR="$CODEDIR/centos-7.1.1503-x86_64-base/output"
+
 (
-    $starting_step "Download CentOS ISO install image"
-    [ -f "$DATADIR/$CENTOSISO" ] &&
-	[[ "$(< "$DATADIR/$CENTOSISO.md5")" = *$ISOMD5* ]]
+    $starting_step "Create output directory"
+    [  -d "$DATADIR" ]
+    $skip_rest_if_already_done
+    mkdir "$DATADIR"
+) ; prev_cmd_failed
+
+"$CODEDIR/centos-7.1.1503-x86_64-base/build.sh"
+
+exit
+
+## Public wakame build
+
+export DATADIR="$CODEDIR/output-pub"
+(
+    $starting_step "Setup output-pub directory"
+    [  -d "$DATADIR" ]
+    $skip_rest_if_already_done
+    mkdir "$DATADIR"
+    ln -s ../output/ "$DATADIR/basic-image-dir"
+) ; prev_cmd_failed
+
+(
+    $starting_step "Extract minimal to start public image build"
+    [ -f "$DATADIR/minimal-image.raw" ]
     $skip_rest_if_already_done
     set -e
-    if [ -f "$CODEDIR/$CENTOSISO" ]; then
-	# to avoid the download while debugging
-	cp -al "$CODEDIR/$CENTOSISO" "$DATADIR/$CENTOSISO"
-    else
-	curl --fail "$CENTOSMIRROR/$CENTOSISO" -o "$DATADIR/$CENTOSISO"
-    fi
-    md5sum "$DATADIR/$CENTOSISO" >"$DATADIR/$CENTOSISO.md5"
-) ; prev_cmd_failed "Error while downloading ISO image"
+    cd "$DATADIR"
+    cp "./basic-image-dir/runscript.sh" .
+    tar xzvf "./basic-image-dir/minimal-image.raw.tar.gz"
+    sed -i 's/tmp.raw/minimal-image.raw/' "./runscript.sh"
+) ; prev_cmd_failed "Error while extracting fresh minimal image"
 
 (
-    $starting_step "Generate ssh key pair and kickstart file"
-    [ -f "$DATADIR/ks-sshpair.cfg" ]
-    $skip_rest_if_already_done
-    set -e
-    [ -f "$DATADIR/tmp-sshkeypair" ] || ssh-keygen -f "$DATADIR/tmp-sshkeypair" -N ""
-    ks_text="$(cat "$CODEDIR/anaconda-ks.cfg")"
-    sshkey_text="$(cat "$DATADIR/tmp-sshkeypair.pub")"
-    cat >"$DATADIR/ks-sshpair.cfg" <<EOF
-$ks_text
-
-%post
-ls -l /root/  >/tmp.listing
-mkdir /root/.ssh
-chmod 700 /root/.ssh
-cat >/root/.ssh/authorized_keys <<EOS
-$sshkey_text
-EOS
-%end
-EOF
-) ; prev_cmd_failed "Error while creating custom ks file with ssh key"
-
-(
-    $starting_step "Install minimal image with kickstart"
-    [ -f "$DATADIR/minimal-image.raw" ] || \
-	    [ -f "$DATADIR/minimal-image.raw.tar.gz" ]
-    $skip_rest_if_already_done
-    set -e
-    cd "$DATADIR"  # centos-kickstart-build.sh creates files in the current $(pwd)
-    time "$CODEDIR/bin/centos-kickstart-build.sh" \
-	 "$CENTOSISO" "ks-sshpair.cfg" "tmp.raw" 1024M
-    cp -al "tmp.raw" "minimal-image.raw"
-) ; prev_cmd_failed "Error while installing minimal image with kickstart"
-
-(
-    $starting_step "Tar minimal image"
-    [ -f "$DATADIR/minimal-image.raw.tar.gz" ]
+    $starting_step "Boot VM to set up for installing public extras"
+    [ -f "$DATADIR/flag-wakame-init-installed" ] ||
+	{
+	    [ -f "$DATADIR/kvm.pid" ] &&
+		kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null
+	}
     $skip_rest_if_already_done
     set -e
     cd "$DATADIR/"
-    time tar czSvf minimal-image.raw.tar.gz minimal-image.raw
-) ; prev_cmd_failed "Error while tarring minimal image"
+    ./runscript.sh >kvm.stdout 2>kvm.stderr &
+    sleep 10
+    kill -0 $(< "$DATADIR/kvm.pid")
+    for (( i=1 ; i<20 ; i++ )); do
+	tryssh="$("$CODEDIR/bin/ssh-shortcut.sh" echo it-worked)" || :
+	[ "$tryssh" = "it-worked" ] && break
+	echo "$i/20 - Waiting 10 more seconds for ssh to connect..."
+	sleep 10
+    done
+    [[ "$tryssh" = "it-worked" ]]
+) ; prev_cmd_failed "Error while booting fresh minimal image"
+
+(
+    $starting_step "Install wakame-init to public image"
+    [ -f "$DATADIR/flag-wakame-init-installed" ]
+    $skip_rest_if_already_done
+    set -e
+    repoURL=https://raw.githubusercontent.com/axsh/wakame-vdc/develop/rpmbuild/yum_repositories/wakame-vdc-stable.repo
+    "$CODEDIR/bin/ssh-shortcut.sh" curl "$repoURL" -o /etc/yum.repos.d/wakame-vdc-stable.repo --fail
+    "$CODEDIR/bin/ssh-shortcut.sh" yum install -y net-tools
+    "$CODEDIR/bin/ssh-shortcut.sh" yum install -y wakame-init
+    "$CODEDIR/bin/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
+    touch "$DATADIR/flag-wakame-init-installed"
+) ; prev_cmd_failed "Error while installing wakame-init"
+
+(
+    $starting_step "Shutdown VM for public image installation"
+    [ -f "$DATADIR/flag-shutdown" ]
+    $skip_rest_if_already_done
+    set -e
+    kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null || \
+	reportfailed "Expecting KVM process to be running now"
+    # the next ssh always returns error, so mask it from set -e
+    "$CODEDIR/bin/ssh-shortcut.sh" shutdown -P now || true
+    for (( i=1 ; i<20 ; i++ )); do
+	kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null || break
+	echo "$i/20 - Waiting 2 more seconds for KVM to exit..."
+	sleep 2
+    done
+    kill -0 $(< "$DATADIR/kvm.pid") 2>/dev/null && exit 1
+    touch "$DATADIR/flag-shutdown"
+) ; prev_cmd_failed "Error while shutting down VM"
+
+
+## KCCS build
+
+
+package-steps()
+{
+    source="$1"
+    target="$2"
+    targetDIR="${2%/*}"
+    targetNAME="${2##*/}"
+    qcowtarget="${target%.raw.tar.gz}.qcow2.gz"
+    qcowNAME="${qcowtarget##*/}"
+    (
+	$starting_step "Tar *.tar.gz file"
+	[ -f "$target" ]
+	$skip_rest_if_already_done
+	set -e
+	cd "$DATADIR/"
+	cp -al "$source" "${target%.tar.gz}"
+	cd "$targetDIR"
+	tar czSvf "$target" "${targetNAME%.tar.gz}"
+	md5sum "${targetNAME}" >"${targetNAME}".md5
+	md5sum "${targetNAME%.tar.gz}" >"${targetNAME%.tar.gz}".md5
+    ) ; prev_cmd_failed "Error while packaging raw.tar.gz file"
+
+    (
+	$starting_step "Create install script for *.raw.tar.gz file"
+	[ -f "$target".install.sh ]
+	$skip_rest_if_already_done
+	set -e
+	cd "$targetDIR"
+	"$CODEDIR/bin/output-image-install-script.sh" "$targetNAME"
+    ) ; prev_cmd_failed "Error while creating install script for raw image: $targetNAME"
+
+    (
+	$starting_step "Convert image to qcow2 format"
+	[ -f "${qcowtarget%.gz}" ] || [ -f "$qcowtarget" ]
+	$skip_rest_if_already_done
+	set -e
+	cd "$targetDIR"
+	[ -f "${target%.tar.gz}" ]
+
+	# remember the size of the raw file, since it is hard to get that
+	# information from the qcow2.gz file without expanding it
+	lsout="$(ls -l "${target%.tar.gz}")" && read t1 t2 t3 t4 fsize rest <<<"$lsout"
+	echo "$fsize" >"${target%.raw.tar.gz}".qcow2.rawsize
+
+	# The compat option is not in older versions of qemu-img.  Assume that
+	# if the option is not there, it defaults to use options that work
+	# with the KVM in Wakame-vdc.
+	qemu-img convert -f raw -O qcow2 -o compat=0.10 "${target%.tar.gz}" "${qcowtarget%.gz}" || \
+	    qemu-img convert -f raw -O qcow2 "${target%.tar.gz}" "${qcowtarget%.gz}"
+	md5sum "${qcowtarget%.gz}" >"${qcowtarget%.gz}".md5
+	ls -l "${qcowtarget%.gz}" >"${qcowtarget%.gz}".lsl
+    ) ; prev_cmd_failed "Error converting image to qcow2 format: $targetNAME"
+
+    (
+	$starting_step "Gzip qcow2 image"
+	[ -f "$qcowtarget" ]
+	$skip_rest_if_already_done
+	set -e
+	cd "$targetDIR"
+	gzip "${qcowtarget%.gz}"
+	md5sum "$qcowtarget" >"$qcowtarget".md5
+    ) ; prev_cmd_failed "Error while running gzip on the qcow2 image: $qcowtarget"
+
+    (
+	$starting_step "Create install script for *.qcow.gz file"
+	[ -f "$qcowtarget".install.sh ]
+	$skip_rest_if_already_done
+	set -e
+	cd "$targetDIR"
+	"$CODEDIR/bin/output-qcow-image-install-script.sh" "$qcowNAME"
+    ) ; prev_cmd_failed "Error while creating install script for qcow image: $qcowtarget"
+}
+
+export UUID=centos7
+package-steps \
+    "$DATADIR/minimal-image.raw" \
+    "$DATADIR/centos-7.x86_64.kvm.md.raw.tar.gz"
