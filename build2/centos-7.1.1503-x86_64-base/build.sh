@@ -1,12 +1,10 @@
-#!/bin/bash
+#!/bin/bash -x
 
 reportfailed()
 {
     echo "Script failed...exiting. ($*)" 1>&2
     exit 255
 }
-
-[ -n "$DATADIR" ] || reportfailed "Expecting $DATADIR to be set"
 
 prev_cmd_failed()
 {
@@ -78,6 +76,7 @@ CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
 ######################################################################
 
 export CODEDIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfailed
+export DATADIR="$CODEDIR/output"
 
 # put the current directory someplace unwritable to force use
 # of the above variables
@@ -187,6 +186,13 @@ SCRIPT
 ######################################################################
 ## Build Steps
 ######################################################################
+
+(
+    $starting_step "Create output directory"
+    [  -d "$DATADIR" ]
+    $skip_rest_if_already_done
+    mkdir "$DATADIR"
+) ; prev_cmd_failed
 
 (
     $starting_step "Download CentOS ISO install image"
