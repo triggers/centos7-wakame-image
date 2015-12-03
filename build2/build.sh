@@ -44,29 +44,11 @@ patch-wakame-init()
 
 "$CODEDIR/centos-7.1.1503-x86_64-base/build.sh"
 
+"$CODEDIR/centos-7.1.1503-x86_64/build.sh"
+
 exit
 
 ## Public wakame build
-
-export DATADIR="$CODEDIR/output-pub"
-(
-    $starting_step "Setup output-pub directory"
-    [  -d "$DATADIR" ]
-    $skip_rest_if_already_done
-    mkdir "$DATADIR"
-    ln -s ../output/ "$DATADIR/basic-image-dir"
-) ; prev_cmd_failed
-
-(
-    $starting_step "Extract minimal to start public image build"
-    [ -f "$DATADIR/minimal-image.raw" ]
-    $skip_rest_if_already_done
-    set -e
-    cd "$DATADIR"
-    cp "./basic-image-dir/runscript.sh" .
-    tar xzvf "./basic-image-dir/minimal-image.raw.tar.gz"
-    sed -i 's/tmp.raw/minimal-image.raw/' "./runscript.sh"
-) ; prev_cmd_failed "Error while extracting fresh minimal image"
 
 (
     $starting_step "Boot VM to set up for installing public extras"
