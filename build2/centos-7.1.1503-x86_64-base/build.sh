@@ -1,71 +1,7 @@
 #!/bin/bash -x
 
-reportfailed()
-{
-    echo "Script failed...exiting. ($*)" 1>&2
-    exit 255
-}
-
-prev_cmd_failed()
-{
-    # this is needed because '( cmd1 ; cmd2 ; set -e ; cmd3 ; cmd4 ) || reportfailed'
-    # does not work because the || disables set -e, even inside the subshell!
-    # see http://unix.stackexchange.com/questions/65532/why-does-set-e-not-work-inside
-    # A workaround is to do  '( cmd1 ; cmd2 ; set -e ; cmd3 ; cmd4 ) ; prev_cmd_failed'
-    (($? == 0)) || reportfailed "$*"
-}
-
-## Hints to understand the scripts in this file:
-## (1) Every step is put in its own process.  The easiest way to do this
-##     is to use ( ), but calling other scripts is also possible for
-##     code reuse or readability reasons.  (In addition, it is necessary
-##     to make sure the script terminates if any of the processes exit with
-##     an error.  This is easy, but does take a little care in bash. See
-##     the comments in prev_cmd_failed.)
-## (2) All steps start with commands that check whether the step has
-##     already been done.  These commands should only check.  They should
-##     not change any state.
-## (3) The return code of the last "check" command is used to decide whether
-##     the rest of the step (i.e. the step's process) needs to be done.
-##     This should be done by inserting "$skip_rest_if_already_done" at
-##     that point in the step.  The default action of $skip_rest_if_already_done
-##     is to exit the process if the return code is 0, but because it is
-##     a simple bash variable, it can be assigned other (code) values for fancy
-##     debugging or status options in the future.
-## (4) An optional '$starting_step "Description of the step"' can optionally appear
-##     at the start of the step.  By default, it outputs a section header in the
-##     build log, but it to allows for future extensibility for fancy debugging
-##     or more control over the build process.
-
-##  Therefore, with minimal effort, it should be possible to take a
-##  the simplest easy-to-read sequential script and make it (at least
-##  somewhat) idempotent.  In other words, it should be possible to
-##  run the script multiple times, and have it gracefully recover from
-##  failures.
-
-: ${starting_step:=default_header}
-: ${skip_rest_if_already_done:=default_skip_step} # exit (sub)process if return code is 0
-export starting_step
-export skip_rest_if_already_done
-
-default_header()
-{
-    step_title="$*"
-}
-export -f default_header
-
-default_skip_step()
-{
-    if (($? == 0)); then
-	echo "** Skipping step: $step_title"
-	step_title=""
-	exit 0
-    else
-	echo ; echo "** DOING STEP: $step_title"
-	step_title=""
-    fi
-}
-export -f default_skip_step
+# set reportfailed, $skip_rest_if_already_done, etc.
+source "$CODEDIR/bin/simple-bash-steps-defaults.source"
 
 CENTOSISO="CentOS-7-x86_64-Minimal-1503-01.iso"
 ISOMD5="d07ab3e615c66a8b2e9a50f4852e6a77"
