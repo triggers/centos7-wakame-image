@@ -12,6 +12,7 @@ CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
 ######################################################################
 
 export CODEDIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfailed
+export DATADIR="/proc/self"  # i.e. not set yet
 
 # put the current directory someplace unwritable to force use
 # of the above variables
@@ -36,100 +37,10 @@ patch-wakame-init()
     } >/etc/wakame-init
 }
 
-simple-yum-install()
-{
-    package="$1"
-    (
-	$starting_step "yum install -y $1"
-	[ -f "$CODEDIR/03-kccs-additions/flag-$package-installed" ]
-	$skip_rest_if_already_done
-	set -e
-	"$CODEDIR/bin/ssh-shortcut.sh" yum install -y $package
-	"$CODEDIR/bin/ssh-shortcut.sh" rpm -qi $package  # make sure rpm thinks it installed
-	touch "$CODEDIR/03-kccs-additions/flag-$package-installed"
-    ) ; prev_cmd_failed "Error while installing $package"
-}
-
-run-mita-script-remotely()
-{
-    scriptpath="$1"
-
-    echo
-    echo "Running script in VM:  $scriptpath"
-
-    "$CODEDIR/bin/ssh-shortcut.sh" <<REMOTESCRIPT
-# Copied from vmbuilder/kvm/rhel/6/functions/distro.sh
-set -x
-date
-$(< "$CODEDIR/copied-from-vmbuilder/distro.sh")
-
-## The above scripts require run_in_target() which is defined
-## in vmapp/tmp/vmbuilder/kvm/rhel/6/functions/utils.sh and
-## uses chroot.  We are executing directly on the OS, so
-## include a pass-through version of run_in_target():
-
-$( cat <<'VERBATIM' # make it unnecessary to excape all the dollar signs:
-  function run_in_target() {
-    local chroot_dir=$1; shift; local args="$*"
-    bash -e -c "${args}" ##  Just run without chroot
-  }
-  export -f run_in_target
-
-  ## Many of the scripts also use chroot directly:
-  chroot() { shift ; "$@" ; }  # disable chroot
-VERBATIM
-)
-
-# The first parameter to scripts is supposed to be the chroot
-# directory, so it must exist to pass error checking.  For the
-# run_in_target calls, it is ignored.  For the non-run_in_target
-# calls, it has to be "/" so when it gets prepended to paths, it comes
-# out as "//", which is equivalent to "/".
-
-# call script with one parameter (/)
-set -x
-set -- "/"
-$(< "$scriptpath")
-REMOTESCRIPT
-}
-
-generate-copy-file-script()
-{
-    pathlocal="$1"
-    pathinvm="$2"
-    perms="$3"
-
-    # using base64 to allow for zero length files (and maybe binary data)
-    set +x # next line produces too much trace data
-    contents="$(base64 "$pathlocal")" || {
-	# cause error in script that will be caught later
-	echo "file-not-found: ${pathlocal##*/}"
-    }
-
-    cat <<SCRIPT
-mkdir -p "${pathinvm%/*}"
-
-base64 -d >$pathinvm <<'EOF'
-$contents
-EOF
-
-chmod $perms $pathinvm
-
-SCRIPT
-}
-
 ######################################################################
 ## Build Steps
 ######################################################################
 
-export DATADIR="$CODEDIR/centos-7.1.1503-x86_64-base/output"
-
-(
-    $starting_step "Create output directory"
-    [  -d "$DATADIR" ]
-    $skip_rest_if_already_done
-    mkdir "$DATADIR"
-) ; prev_cmd_failed
 
 "$CODEDIR/centos-7.1.1503-x86_64-base/build.sh"
 
