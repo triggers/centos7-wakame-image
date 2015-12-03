@@ -1,7 +1,4 @@
-#!/bin/bash -x
-
-# set reportfailed, $skip_rest_if_already_done, etc.
-source "$CODEDIR/bin/simple-bash-steps-defaults.source"
+#!/bin/bash
 
 ######################################################################
 ## Directory Paths
@@ -17,6 +14,9 @@ cd -P /proc/self
 ######################################################################
 ## Build Steps
 ######################################################################
+
+# set reportfailed, $skip_rest_if_already_done, etc.
+source "$CODEDIR/bin/simple-bash-steps-defaults.source"
 
 source "$CODEDIR/build.conf"
 
