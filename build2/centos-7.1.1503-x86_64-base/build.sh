@@ -62,6 +62,7 @@ $sshkey_text
 EOS
 %end
 EOF
+    cp "$CODEDIR/bin/ssh-shortcut.sh" "$DATADIR"
 ) ; prev_cmd_failed "Error while creating custom ks file with ssh key"
 
 (

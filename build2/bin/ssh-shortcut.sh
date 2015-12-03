@@ -10,5 +10,5 @@ reportfailed()
 
 export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfailed
 
-ssh root@127.0.0.1 -p 2224 -i "$SCRIPT_DIR/../output/tmp-sshkeypair" "$@"
+ssh root@127.0.0.1 -p 2224 -i "$SCRIPT_DIR/tmp-sshkeypair" "$@"
 
