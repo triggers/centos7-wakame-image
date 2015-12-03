@@ -3,10 +3,6 @@
 # set reportfailed, $skip_rest_if_already_done, etc.
 source "$CODEDIR/bin/simple-bash-steps-defaults.source"
 
-CENTOSISO="CentOS-7-x86_64-Minimal-1503-01.iso"
-ISOMD5="d07ab3e615c66a8b2e9a50f4852e6a77"
-CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
-
 ######################################################################
 ## Directory Paths
 ######################################################################
@@ -21,6 +17,8 @@ cd -P /proc/self
 ######################################################################
 ## Build Steps
 ######################################################################
+
+source "$CODEDIR/build.conf"
 
 (
     $starting_step "Create output directory"
