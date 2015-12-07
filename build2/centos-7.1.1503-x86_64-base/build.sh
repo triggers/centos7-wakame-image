@@ -16,7 +16,7 @@ cd -P /proc/self
 ######################################################################
 
 # set reportfailed, $skip_rest_if_already_done, etc.
-source "$CODEDIR/bin/simple-bash-steps-defaults.source"
+source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 
 source "$CODEDIR/build.conf"
 

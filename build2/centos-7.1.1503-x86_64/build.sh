@@ -35,7 +35,7 @@ patch-wakame-init()
 ######################################################################
 
 # set reportfailed, $skip_rest_if_already_done, etc.
-source "$CODEDIR/bin/simple-bash-steps-defaults.source"
+source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 
 (
     $starting_step "Create output directory"
