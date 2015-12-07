@@ -28,6 +28,7 @@ prev_cmd_failed()
 ##     the rest of the step (i.e. the step's process) needs to be done.
 ##     This should be done by inserting "$skip_rest_if_already_done" at
 ##     that point in the step.
+##     ((TODO: update the doc))
 ## (4) An optional '$starting_step "Description of the step"' can appear
 ##     at the start of the step.
 
@@ -59,16 +60,18 @@ prev_cmd_failed()
 ## to ":", which should (if everything is written correctly) turn the scripts
 ## back into a typical script that blindly runs from start to finish.
 
-: ${starting_step:=default_header}
+: ${starting_dependents:=default_set_title}
+: ${starting_checks:=default_set_title}
 : ${skip_rest_if_already_done:=default_skip_step} # exit (sub)process if return code is 0
-export starting_step
+export starting_dependents
+export starting_checks
 export skip_rest_if_already_done
 
-default_header()
+default_set_title()
 {
-    step_title="$*"
+    [ "$*" != "" ] && step_title="$*"
 }
-export -f default_header
+export -f default_set_title
 
 default_skip_step()
 {

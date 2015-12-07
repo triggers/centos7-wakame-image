@@ -38,19 +38,19 @@ patch-wakame-init()
 source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 
 (
-    $starting_step "Build centos-7.1.1503-x86_64 image"
+    $starting_dependents "Build centos-7.1.1503-x86_64 image"
 
     "$CODEDIR/build-base-image-dir/build.sh" ; prev_cmd_failed
 
     (
-	$starting_step "Create output directory"
+	$starting_checks "Create output directory"
 	[ -d "$DATADIR" ]
 	$skip_rest_if_already_done
 	mkdir "$DATADIR"
     ) ; prev_cmd_failed
 
     (
-	$starting_step "Extract minimal image to start public image build"
+	$starting_checks "Extract minimal image to start public image build"
 	[ -f "$DATADIR/minimal-image.raw" ]
 	$skip_rest_if_already_done
 	set -e
@@ -63,7 +63,7 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
     ) ; prev_cmd_failed "Error while extracting fresh minimal image"
 
     (
-	$starting_step "Boot VM to set up for installing public extras"
+	$starting_checks "Boot VM to set up for installing public extras"
 	[ -f "$DATADIR/flag-wakame-init-installed" ] ||
 	    {
 		[ -f "$DATADIR/kvm.pid" ] &&
@@ -86,7 +86,7 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
     ) ; prev_cmd_failed "Error while booting fresh minimal image"
 
     (
-	$starting_step "Install wakame-init to public image"
+	$starting_checks "Install wakame-init to public image"
 	[ -f "$DATADIR/flag-wakame-init-installed" ]
 	$skip_rest_if_already_done
 	set -e
@@ -99,7 +99,7 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
     ) ; prev_cmd_failed "Error while installing wakame-init"
 
     (
-	$starting_step "Shutdown VM for public image installation"
+	$starting_checks "Shutdown VM for public image installation"
 	[ -f "$DATADIR/flag-shutdown" ]
 	$skip_rest_if_already_done
 	set -e
@@ -125,7 +125,7 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 	qcowtarget="${target%.raw.tar.gz}.qcow2.gz"
 	qcowNAME="${qcowtarget##*/}"
 	(
-	    $starting_step "Tar *.tar.gz file"
+	    $starting_checks "Tar *.tar.gz file"
 	    [ -f "$target" ]
 	    $skip_rest_if_already_done
 	    set -e
@@ -138,7 +138,7 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 	) ; prev_cmd_failed "Error while packaging raw.tar.gz file"
 
 	(
-	    $starting_step "Create install script for *.raw.tar.gz file"
+	    $starting_checks "Create install script for *.raw.tar.gz file"
 	    [ -f "$target".install.sh ]
 	    $skip_rest_if_already_done
 	    set -e
@@ -147,7 +147,7 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 	) ; prev_cmd_failed "Error while creating install script for raw image: $targetNAME"
 
 	(
-	    $starting_step "Convert image to qcow2 format"
+	    $starting_checks "Convert image to qcow2 format"
 	    [ -f "${qcowtarget%.gz}" ] || [ -f "$qcowtarget" ]
 	    $skip_rest_if_already_done
 	    set -e
@@ -169,7 +169,7 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 	) ; prev_cmd_failed "Error converting image to qcow2 format: $targetNAME"
 
 	(
-	    $starting_step "Gzip qcow2 image"
+	    $starting_checks "Gzip qcow2 image"
 	    [ -f "$qcowtarget" ]
 	    $skip_rest_if_already_done
 	    set -e
@@ -179,7 +179,7 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 	) ; prev_cmd_failed "Error while running gzip on the qcow2 image: $qcowtarget"
 
 	(
-	    $starting_step "Create install script for *.qcow.gz file"
+	    $starting_checks "Create install script for *.qcow.gz file"
 	    [ -f "$qcowtarget".install.sh ]
 	    $skip_rest_if_already_done
 	    set -e
@@ -192,6 +192,7 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 	"$DATADIR/minimal-image.raw" \
 	"$DATADIR/centos-7.x86_64.kvm.md.raw.tar.gz"
 
+    $starting_checks
     $skip_rest_if_already_done
     set -e
     true # this step just groups the above steps

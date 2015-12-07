@@ -21,16 +21,16 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 source "$CODEDIR/build.conf"
 
 (
-    $starting_step "Build centos-7.1.1503-x86_64-base image"
+    $starting_dependents "Build centos-7.1.1503-x86_64-base image"
     (
-	$starting_step "Create output directory"
+	$starting_checks "Create output directory"
 	[  -d "$DATADIR" ]
 	$skip_rest_if_already_done
 	mkdir "$DATADIR"
     ) ; prev_cmd_failed
 
     (
-	$starting_step "Download CentOS ISO install image"
+	$starting_checks "Download CentOS ISO install image"
 	[ -f "$DATADIR/$CENTOSISO" ] &&
 	    [[ "$(< "$DATADIR/$CENTOSISO.md5")" = *$ISOMD5* ]]
 	$skip_rest_if_already_done
@@ -45,7 +45,7 @@ source "$CODEDIR/build.conf"
     ) ; prev_cmd_failed "Error while downloading ISO image"
 
     (
-	$starting_step "Generate ssh key pair and kickstart file"
+	$starting_checks "Generate ssh key pair and kickstart file"
 	[ -f "$DATADIR/ks-sshpair.cfg" ]
 	$skip_rest_if_already_done
 	set -e
@@ -68,7 +68,7 @@ EOF
     ) ; prev_cmd_failed "Error while creating custom ks file with ssh key"
 
     (
-	$starting_step "Install minimal image with kickstart"
+	$starting_checks "Install minimal image with kickstart"
 	[ -f "$DATADIR/minimal-image.raw" ] || \
 	    [ -f "$DATADIR/minimal-image.raw.tar.gz" ]
 	$skip_rest_if_already_done
@@ -80,7 +80,7 @@ EOF
     ) ; prev_cmd_failed "Error while installing minimal image with kickstart"
 
     (
-	$starting_step "Tar minimal image"
+	$starting_checks "Tar minimal image"
 	[ -f "$DATADIR/minimal-image.raw.tar.gz" ]
 	$skip_rest_if_already_done
 	set -e
@@ -88,6 +88,7 @@ EOF
 	time tar czSvf minimal-image.raw.tar.gz minimal-image.raw
     ) ; prev_cmd_failed "Error while tarring minimal image"
 
+    $starting_checks
     $skip_rest_if_already_done
     set -e
     true # this step just groups the above steps
