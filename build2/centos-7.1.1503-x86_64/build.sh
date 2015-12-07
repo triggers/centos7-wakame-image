@@ -39,7 +39,7 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 
 ( ## "Build centos-7.1.1503-x86_64 image"
 
-    "$CODEDIR/bin/build-base-image-dir/build.sh
+    "$CODEDIR/build-base-image-dir/build.sh" ; prev_cmd_failed
 
     (
 	$starting_step "Create output directory"
@@ -186,13 +186,15 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 	    "$CODEDIR/bin/output-qcow-image-install-script.sh" "$qcowNAME"
 	) ; prev_cmd_failed "Error while creating install script for qcow image: $qcowtarget"
     }
+    export UUID=centos7
+    package-steps \
+	"$DATADIR/minimal-image.raw" \
+	"$DATADIR/centos-7.x86_64.kvm.md.raw.tar.gz"
+
     $starting_step "Build centos-7.1.1503-x86_64 image"
     $skip_rest_if_already_done
     set -e
     true # this step just groups the above steps
 )
 
-export UUID=centos7
-package-steps \
-    "$DATADIR/minimal-image.raw" \
-    "$DATADIR/centos-7.x86_64.kvm.md.raw.tar.gz"
+
