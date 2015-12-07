@@ -20,37 +20,38 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 
 source "$CODEDIR/build.conf"
 
-(
-    $starting_step "Create output directory"
-    [  -d "$DATADIR" ]
-    $skip_rest_if_already_done
-    mkdir "$DATADIR"
-) ; prev_cmd_failed
+( ## "Build centos-7.1.1503-x86_64-base image"
+    (
+	$starting_step "Create output directory"
+	[  -d "$DATADIR" ]
+	$skip_rest_if_already_done
+	mkdir "$DATADIR"
+    ) ; prev_cmd_failed
 
-(
-    $starting_step "Download CentOS ISO install image"
-    [ -f "$DATADIR/$CENTOSISO" ] &&
-	[[ "$(< "$DATADIR/$CENTOSISO.md5")" = *$ISOMD5* ]]
-    $skip_rest_if_already_done
-    set -e
-    if [ -f "$CODEDIR/$CENTOSISO" ]; then
-	# to avoid the download while debugging
-	cp -al "$CODEDIR/$CENTOSISO" "$DATADIR/$CENTOSISO"
-    else
-	curl --fail "$CENTOSMIRROR/$CENTOSISO" -o "$DATADIR/$CENTOSISO"
-    fi
-    md5sum "$DATADIR/$CENTOSISO" >"$DATADIR/$CENTOSISO.md5"
-) ; prev_cmd_failed "Error while downloading ISO image"
+    (
+	$starting_step "Download CentOS ISO install image"
+	[ -f "$DATADIR/$CENTOSISO" ] &&
+	    [[ "$(< "$DATADIR/$CENTOSISO.md5")" = *$ISOMD5* ]]
+	$skip_rest_if_already_done
+	set -e
+	if [ -f "$CODEDIR/$CENTOSISO" ]; then
+	    # to avoid the download while debugging
+	    cp -al "$CODEDIR/$CENTOSISO" "$DATADIR/$CENTOSISO"
+	else
+	    curl --fail "$CENTOSMIRROR/$CENTOSISO" -o "$DATADIR/$CENTOSISO"
+	fi
+	md5sum "$DATADIR/$CENTOSISO" >"$DATADIR/$CENTOSISO.md5"
+    ) ; prev_cmd_failed "Error while downloading ISO image"
 
-(
-    $starting_step "Generate ssh key pair and kickstart file"
-    [ -f "$DATADIR/ks-sshpair.cfg" ]
-    $skip_rest_if_already_done
-    set -e
-    [ -f "$DATADIR/tmp-sshkeypair" ] || ssh-keygen -f "$DATADIR/tmp-sshkeypair" -N ""
-    ks_text="$(cat "$CODEDIR/anaconda-ks.cfg")"
-    sshkey_text="$(cat "$DATADIR/tmp-sshkeypair.pub")"
-    cat >"$DATADIR/ks-sshpair.cfg" <<EOF
+    (
+	$starting_step "Generate ssh key pair and kickstart file"
+	[ -f "$DATADIR/ks-sshpair.cfg" ]
+	$skip_rest_if_already_done
+	set -e
+	[ -f "$DATADIR/tmp-sshkeypair" ] || ssh-keygen -f "$DATADIR/tmp-sshkeypair" -N ""
+	ks_text="$(cat "$CODEDIR/anaconda-ks.cfg")"
+	sshkey_text="$(cat "$DATADIR/tmp-sshkeypair.pub")"
+	cat >"$DATADIR/ks-sshpair.cfg" <<EOF
 $ks_text
 
 %post
@@ -62,26 +63,32 @@ $sshkey_text
 EOS
 %end
 EOF
-    cp "$CODEDIR/bin/ssh-shortcut.sh" "$DATADIR"
-) ; prev_cmd_failed "Error while creating custom ks file with ssh key"
+	cp "$CODEDIR/bin/ssh-shortcut.sh" "$DATADIR"
+    ) ; prev_cmd_failed "Error while creating custom ks file with ssh key"
 
-(
-    $starting_step "Install minimal image with kickstart"
-    [ -f "$DATADIR/minimal-image.raw" ] || \
+    (
+	$starting_step "Install minimal image with kickstart"
+	[ -f "$DATADIR/minimal-image.raw" ] || \
 	    [ -f "$DATADIR/minimal-image.raw.tar.gz" ]
-    $skip_rest_if_already_done
-    set -e
-    cd "$DATADIR"  # centos-kickstart-build.sh creates files in the current $(pwd)
-    time "$CODEDIR/bin/centos-kickstart-build.sh" \
-	 "$CENTOSISO" "ks-sshpair.cfg" "tmp.raw" 1024M
-    cp -al "tmp.raw" "minimal-image.raw"
-) ; prev_cmd_failed "Error while installing minimal image with kickstart"
+	$skip_rest_if_already_done
+	set -e
+	cd "$DATADIR"  # centos-kickstart-build.sh creates files in the current $(pwd)
+	time "$CODEDIR/bin/centos-kickstart-build.sh" \
+	     "$CENTOSISO" "ks-sshpair.cfg" "tmp.raw" 1024M
+	cp -al "tmp.raw" "minimal-image.raw"
+    ) ; prev_cmd_failed "Error while installing minimal image with kickstart"
 
-(
-    $starting_step "Tar minimal image"
-    [ -f "$DATADIR/minimal-image.raw.tar.gz" ]
+    (
+	$starting_step "Tar minimal image"
+	[ -f "$DATADIR/minimal-image.raw.tar.gz" ]
+	$skip_rest_if_already_done
+	set -e
+	cd "$DATADIR/"
+	time tar czSvf minimal-image.raw.tar.gz minimal-image.raw
+    ) ; prev_cmd_failed "Error while tarring minimal image"
+
+    $starting_step "Build centos-7.1.1503-x86_64-base image"
     $skip_rest_if_already_done
     set -e
-    cd "$DATADIR/"
-    time tar czSvf minimal-image.raw.tar.gz minimal-image.raw
-) ; prev_cmd_failed "Error while tarring minimal image"
+    true # this step just groups the above steps
+)
