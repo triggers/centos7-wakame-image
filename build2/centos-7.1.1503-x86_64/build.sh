@@ -39,13 +39,13 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 
 (
     $starting_step "Create output directory"
-    [  -d "$DATADIR" ]
+    [ -d "$DATADIR" ]
     $skip_rest_if_already_done
     mkdir "$DATADIR"
 ) ; prev_cmd_failed
 
 (
-    $starting_step "Extract minimal to start public image build"
+    $starting_step "Extract minimal image to start public image build"
     [ -f "$DATADIR/minimal-image.raw" ]
     $skip_rest_if_already_done
     set -e
