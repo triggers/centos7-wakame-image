@@ -37,7 +37,8 @@ patch-wakame-init()
 # set reportfailed, $skip_rest_if_already_done, etc.
 source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 
-( ## "Build centos-7.1.1503-x86_64 image"
+(
+    $starting_step "Build centos-7.1.1503-x86_64 image"
 
     "$CODEDIR/build-base-image-dir/build.sh" ; prev_cmd_failed
 
@@ -191,10 +192,7 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 	"$DATADIR/minimal-image.raw" \
 	"$DATADIR/centos-7.x86_64.kvm.md.raw.tar.gz"
 
-    $starting_step "Build centos-7.1.1503-x86_64 image"
     $skip_rest_if_already_done
     set -e
     true # this step just groups the above steps
 )
-
-

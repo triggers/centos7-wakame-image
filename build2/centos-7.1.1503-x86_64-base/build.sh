@@ -20,7 +20,8 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 
 source "$CODEDIR/build.conf"
 
-( ## "Build centos-7.1.1503-x86_64-base image"
+(
+    $starting_step "Build centos-7.1.1503-x86_64-base image"
     (
 	$starting_step "Create output directory"
 	[  -d "$DATADIR" ]
@@ -87,7 +88,6 @@ EOF
 	time tar czSvf minimal-image.raw.tar.gz minimal-image.raw
     ) ; prev_cmd_failed "Error while tarring minimal image"
 
-    $starting_step "Build centos-7.1.1503-x86_64-base image"
     $skip_rest_if_already_done
     set -e
     true # this step just groups the above steps
