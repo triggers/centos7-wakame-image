@@ -13,16 +13,6 @@ set -e
 [ -f "$DATADIR/tmp-sshkeypair" ] || ssh-keygen -f "$DATADIR/tmp-sshkeypair" -N ""
 ks_text="$(cat "$CODEDIR/anaconda-ks.cfg")"
 sshkey_text="$(cat "$DATADIR/tmp-sshkeypair.pub")"
-cat >"$DATADIR/ks-sshpair.cfg" <<EOF
-$ks_text
+cp "$CODEDIR/anaconda-ks.cfg" "$DATADIR/ks-sshpair.cfg"
 
-%post
-ls -l /root/  >/tmp.listing
-mkdir /root/.ssh
-chmod 700 /root/.ssh
-cat >/root/.ssh/authorized_keys <<EOS
-$sshkey_text
-EOS
-%end
-EOF
 cp "$CODEDIR/bin/ssh-shortcut.sh" "$DATADIR"

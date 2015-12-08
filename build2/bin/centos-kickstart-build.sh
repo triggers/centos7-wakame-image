@@ -167,8 +167,8 @@ echo "Finished sending key presses"
 # alt-B will select that button.  Seems to take at least 20 seconds to get
 # to that screen so....
 
-sleep 60
-echo sendkey alt-b | nc 127.0.0.1 4567
+#sleep 60
+#echo sendkey alt-b | nc 127.0.0.1 4567
 
 echo
 echo "Just sent an extra alt-b just in case"
