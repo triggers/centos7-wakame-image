@@ -23,7 +23,7 @@ source "$CODEDIR/build.conf"
 (
     $starting_dependents "Build centos-7.1.1503-x86_64-base image"
     (
-	$starting_checks "Create output directory"
+	$starting_checks "Create output directory for base image"
 	[  -d "$DATADIR" ]
 	$skip_rest_if_already_done
 	mkdir "$DATADIR"
