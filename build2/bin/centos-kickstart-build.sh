@@ -144,8 +144,11 @@ sleep 15
 # will allow the rest initial command line to be typed in manually.
 # A VNC based solution is also possible, but not currently implemented.
 
+# the need for the selinux keys is explained here:
+# http://serverfault.com/questions/340679/centos-6-kickstart-ignoring-selinux-disabled
 [ "$keypresses" = "" ] && \
-    keypresses="tab spc k s equal h d shift-semicolon f d 0 shift-semicolon  slash k s dot c f g ret"
+    selinux="s e l i n u x equal 0 spc"
+    keypresses="tab spc $selinux k s equal h d shift-semicolon f d 0 shift-semicolon  slash k s dot c f g ret"
 
 
 # send "<tab><space>ks=hd:fd0:/ks.cfg"
@@ -167,8 +170,8 @@ echo "Finished sending key presses"
 # alt-B will select that button.  Seems to take at least 20 seconds to get
 # to that screen so....
 
-#sleep 60
-#echo sendkey alt-b | nc 127.0.0.1 4567
+sleep 60
+echo sendkey alt-b | nc 127.0.0.1 4567
 
 echo
 echo "Just sent an extra alt-b just in case"
