@@ -190,9 +190,8 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 	) ; prev_cmd_failed "Error while creating install script for qcow image: $qcowtarget"
 
 	$starting_checks
-	$skip_rest_if_already_done
-	set -e
 	true # this step just groups the above steps
+	$skip_rest_if_already_done
     )
     export UUID=centos7
     package-steps \
@@ -200,7 +199,6 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 	"$DATADIR/centos-7.x86_64.kvm.md.raw.tar.gz"
 
     $starting_checks
-    $skip_rest_if_already_done
-    set -e
     true # this step just groups the above steps
+    $skip_rest_if_already_done
 )

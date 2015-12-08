@@ -89,7 +89,6 @@ EOF
     ) ; prev_cmd_failed "Error while tarring minimal image"
 
     $starting_checks
-    $skip_rest_if_already_done
-    set -e
     true # this step just groups the above steps
+    $skip_rest_if_already_done
 )
