@@ -19,7 +19,7 @@ cd -P /proc/self
 source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 
 (
-    $starting_dependents "Build centos-7.1.1503-x86_64 image"
+    $starting_dependents "Build centos-6.7-x86_64 image"
 
     "$CODEDIR/build-base-image-dir/build.sh" ; prev_cmd_failed
 
@@ -27,10 +27,10 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 	"$i" ; prev_cmd_failed
     done
 
-    export UUID=centos7
+    export UUID=centos6
     "$CODEDIR/set-of-steps/steps-for-packaging.sh" \
 	"$DATADIR/minimal-image.raw" \
-	"$DATADIR/centos-7.x86_64.kvm.md.raw.tar.gz"
+	"$DATADIR/centos-6.7.x86_64.kvm.md.raw.tar.gz"
 
     $starting_checks
     true # this step just groups the above steps
