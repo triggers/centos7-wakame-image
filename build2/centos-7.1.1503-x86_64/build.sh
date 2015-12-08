@@ -117,13 +117,15 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
     ) ; prev_cmd_failed "Error while shutting down VM"
 
     package-steps()
-    {
+    ( # <-note this starts a subshell
 	source="$1"
 	target="$2"
 	targetDIR="${2%/*}"
 	targetNAME="${2##*/}"
 	qcowtarget="${target%.raw.tar.gz}.qcow2.gz"
 	qcowNAME="${qcowtarget##*/}"
+
+	$starting_dependents "Packaging ${target##*/}"
 	(
 	    $starting_checks "Tar *.tar.gz file"
 	    [ -f "$target" ]
@@ -186,7 +188,12 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 	    cd "$targetDIR"
 	    "$CODEDIR/bin/output-qcow-image-install-script.sh" "$qcowNAME"
 	) ; prev_cmd_failed "Error while creating install script for qcow image: $qcowtarget"
-    }
+
+	$starting_checks
+	$skip_rest_if_already_done
+	set -e
+	true # this step just groups the above steps
+    )
     export UUID=centos7
     package-steps \
 	"$DATADIR/minimal-image.raw" \
