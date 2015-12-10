@@ -21,7 +21,7 @@ source "$CODEDIR/bin/simple-defaults-for-bashsteps.source"
 source "$CODEDIR/build.conf"
 
 (
-    $starting_dependents "Build centos-7.1.1503-x86_64-base image"
+    $starting_dependents "Build centos-6.7-x86_64-base image"
 
     for i in "$CODEDIR/steps-to-do"/*.sh; do
 	"$i" ; prev_cmd_failed
