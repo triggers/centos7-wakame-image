@@ -69,7 +69,7 @@ default-skip-step()
 }
 export -f default-skip-step
 
-CENTOSISO="CentOS-7-x86_64-Minimal-1503-01.iso"
+CENTOSISO="CentOS-7-x86_64-Minimal-1511.iso"
 ISOMD5="d07ab3e615c66a8b2e9a50f4852e6a77"
 CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
 
