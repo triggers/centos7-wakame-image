@@ -17,6 +17,7 @@ prev-cmd-failed()
 
 export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfailed
 
+
 ## Hints to understand the scripts in this file:
 ## (1) Every step is put in its own process.  The easiest way to do this
 ##     is to use ( ), but calling other scripts is also possible for
@@ -69,6 +70,11 @@ default_skip_step()
 }
 export -f default_skip_step
 
+doing_message()
+{
+  echo ; echo "** DOING STEP: $*"
+}
+
 CENTOSISO="CentOS-7-x86_64-Minimal-1511.iso"
 ISOMD5="88c0437f0a14c6e2c94426df9d43cd67"
 CENTOSMIRROR="http://ftp.iij.ad.jp/pub/linux/centos/7/isos/x86_64/"
@@ -104,6 +110,20 @@ simple-yum-install()
 	"$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi $package  # make sure rpm thinks it installed
 	touch "$SCRIPT_DIR/03-kccs-additions/flag-$package-installed"
     ) ; prev-cmd-failed "Error while installing $package"
+}
+
+simple-yum-update()
+{
+    package="$1"
+    (
+	$starting_step "yum update -y $1"
+	[ -f "$SCRIPT_DIR/03-kccs-additions/flag-$package-updated" ]
+	$skip_rest_if_already_done
+	set -e
+	"$SCRIPT_DIR/ssh-shortcut.sh" yum update -y $package
+	"$SCRIPT_DIR/ssh-shortcut.sh" rpm -qi $package  # make sure rpm thinks it updated
+	touch "$SCRIPT_DIR/03-kccs-additions/flag-$package-updated"
+    ) ; prev-cmd-failed "Error while updating $package"
 }
 
 run-mita-script-remotely()
@@ -174,9 +194,90 @@ chmod $perms $pathinvm
 SCRIPT
 }
 
+
+######################################################################
+## Reset Steps
+######################################################################
+FORCE_RM="rm -f"
+
+cleanup()
+{
+  target_path=$1
+  (
+    $FORCE_RM $target_path/*.iso
+    $FORCE_RM $target_path/*.md5
+    $FORCE_RM $target_path/*.img
+    $FORCE_RM $target_path/*.cfg
+    $FORCE_RM $target_path/*.sh
+    $FORCE_RM $target_path/*.raw
+    $FORCE_RM $target_path/*.gz
+    $FORCE_RM $target_path/*.lsl
+    $FORCE_RM $target_path/*.rawsize
+    $FORCE_RM $target_path/kvm.*
+    $FORCE_RM $target_path/tmp*
+    $FORCE_RM $target_path/flag-*
+  ) ; prev-cmd-failed "Error while cleanup($target_path)"
+}
+
+cleanup_seed_image()
+{
+  doing_message "Cleanup seed images"
+  cleanup "$SCRIPT_DIR/01-minimal-image"
+}
+
+cleanup_seed_image_without_download_iso()
+{
+  doing_message "Cleanup seed images without downloading minimal ISO image"
+  $FORCE_RM "$SCRIPT_DIR/01-minimal-image/ks-sshpair.cfg"
+  $FORCE_RM "$SCRIPT_DIR/01-minimal-image/tmp-sshkeypair"
+  $FORCE_RM "$SCRIPT_DIR/01-minimal-image/tmp.raw"
+  $FORCE_RM "$SCRIPT_DIR/01-minimal-image/minimal-image.raw"
+  $FORCE_RM "$SCRIPT_DIR/01-minimal-image/minimal-image.raw.tar.gz"
+}
+
+cleanup_each_steps()
+{
+  doing_message "Cleanup each steps"
+  cleanup "$SCRIPT_DIR/02-image-plus-wakame-init"
+  cleanup "$SCRIPT_DIR/03-kccs-additions"
+}
+
+cleanup_packages()
+{
+  doing_message "Cleanup packages"
+  cleanup "$SCRIPT_DIR/99-package-for-wakame-vdc"
+  cleanup "$SCRIPT_DIR/99k-package-for-kccs"
+}
+
+option=$1
+if [ -n "$option" ]; then
+  case "$option" in
+  full-reset-build)
+    cleanup_seed_image
+    cleanup_each_steps
+    cleanup_packages
+    ;;
+  full-reset-build-without-download-iso)
+    cleanup_seed_image_without_download_iso
+    cleanup_each_steps
+    cleanup_packages
+    ;;
+  reset-build)
+    cleanup_each_steps
+    cleanup_packages
+    ;;
+  *)
+    echo "[ERROR] Unknown option ($option)" >&2
+    exit 1
+    ;;
+  esac
+fi
+
 ######################################################################
 ## Build Steps
 ######################################################################
+
+## Seed image
 
 (
     $starting_step "Download CentOS ISO install image"
@@ -234,8 +335,9 @@ EOF
     time tar czSvf minimal-image.raw.tar.gz minimal-image.raw
 ) ; prev-cmd-failed "Error while tarring minimal image"
 
-## Public wakame build
 
+## Public wakame build
+<< COMMENTOUT
 (
     $starting_step "Extract minimal to start public image build"
     [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.raw" ]
@@ -282,6 +384,10 @@ EOF
     touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed"
 ) ; prev-cmd-failed "Error while installing wakame-init"
 
+simple-yum-update "kernel"
+simple-yum-update "kernel-tools"
+simple-yum-update "kernel-tools-libs"
+
 (
     $starting_step "Shutdown VM for public image installation"
     [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown" ]
@@ -299,7 +405,7 @@ EOF
     kill -0 $(< "$SCRIPT_DIR/02-image-plus-wakame-init/kvm.pid") 2>/dev/null && exit 1
     touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-shutdown"
 ) ; prev-cmd-failed "Error while shutting down VM"
-
+COMMENTOUT
 
 ## KCCS build
 (
@@ -334,6 +440,10 @@ EOF
     done
     [[ "$tryssh" = "it-worked" ]]
 ) ; prev-cmd-failed "Error while booting fresh minimal image for KCCS additions"
+
+simple-yum-update "kernel"
+simple-yum-update "kernel-tools"
+simple-yum-update "kernel-tools-libs"
 
 addpkg="
 man-db
@@ -432,14 +542,26 @@ EOF
 ) ; prev-cmd-failed "Error while running xexecscript.d scripts"
 
 (
-    $starting_step "Patch wakame-init (TODO, fix this upstream)"
-    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-patch-wakame-init" ]
+    $starting_step "Install wakame-init(for development)"
+    [ -f "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed" ]
     $skip_rest_if_already_done
     set -e
-    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y net-tools  # wakame-init uses ifconfig
-    "$SCRIPT_DIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
-    touch "$SCRIPT_DIR/03-kccs-additions/flag-patch-wakame-init"
-) ; prev-cmd-failed "Error while patching wakame-init"
+    "$SCRIPT_DIR/scp-shortcut.sh" "/home/k-oyakata/rpmbuild/RPMS/noarch/wakame-init-16.1-1.daily.fc22.noarch.rpm"
+    "$SCRIPT_DIR/ssh-shortcut.sh" rpm -ivh /tmp/wakame-init-16.1-1.daily.fc22.noarch.rpm
+    "$SCRIPT_DIR/ssh-shortcut.sh" chkconfig wakame-init on
+    "$SCRIPT_DIR/ssh-shortcut.sh" chkconfig --list wakame-init
+    touch "$SCRIPT_DIR/02-image-plus-wakame-init/flag-wakame-init-installed"
+) ; prev-cmd-failed "Error while installing wakame-init"
+
+#(
+#    $starting_step "Patch wakame-init (TODO, fix this upstream)"
+#    [ -f "$SCRIPT_DIR/03-kccs-additions/flag-patch-wakame-init" ]
+#    $skip_rest_if_already_done
+#    set -e
+#    "$SCRIPT_DIR/ssh-shortcut.sh" yum install -y net-tools  # wakame-init uses ifconfig
+#    "$SCRIPT_DIR/ssh-shortcut.sh" <<<"$(declare -f patch-wakame-init; echo patch-wakame-init)"
+#    touch "$SCRIPT_DIR/03-kccs-additions/flag-patch-wakame-init"
+#) ; prev-cmd-failed "Error while patching wakame-init"
 
 (
     $starting_step "Copy second set of files (just resolv.conf)"
@@ -572,12 +694,12 @@ package-steps()
     ) ; prev-cmd-failed "Error while creating install script for qcow image: $qcowtarget"
 }
 
-export UUID=centos7
-package-steps \
-    "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.raw" \
-    "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz"
+#export UUID=centos7
+#package-steps \
+#    "$SCRIPT_DIR/02-image-plus-wakame-init/minimal-image.raw" \
+#    "$SCRIPT_DIR/99-package-for-wakame-vdc/centos-7.x86_64.kvm.md.raw.tar.gz"
 
-export UUID=centos71std
+export UUID=centos72std16021
 package-steps \
     "$SCRIPT_DIR/03-kccs-additions/minimal-image.raw" \
-    "$SCRIPT_DIR/99k-package-for-kccs/centos71std-01.15111.raw.tar.gz"
+    "$SCRIPT_DIR/99k-package-for-kccs/centos72std-01.16021.raw.tar.gz"
